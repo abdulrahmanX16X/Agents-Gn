@@ -1,0 +1,1611 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AgentHub — Production AI Agent Platform</title>
+
+  <!-- Fonts: Inter & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            surface: {
+              950: '#050507',
+              900: '#09090d',
+              850: '#0f0f16',
+              800: '#161621',
+              700: '#222232',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- React 18, Babel, Axios, Marked (for Markdown rendering in Chat) -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+  <style>
+    body {
+      background-color: #050507;
+      color: #f4f4f5;
+      font-family: 'Inter', sans-serif;
+      overflow-x: hidden;
+    }
+
+    /* Subtle top radial light */
+    .bg-radial-top {
+      background-image: radial-gradient(ellipse 80% 45% at 50% -15%, rgba(124, 58, 237, 0.14), rgba(5, 5, 7, 0));
+    }
+
+    /* Refined Glass Surfaces */
+    .panel {
+      background: rgba(15, 15, 22, 0.75);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .card-interactive {
+      background: rgba(15, 15, 22, 0.55);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .card-interactive:hover {
+      background: rgba(22, 22, 33, 0.8);
+      border-color: rgba(139, 92, 246, 0.35);
+      transform: translateY(-2px);
+      box-shadow: 0 16px 36px -14px rgba(124, 58, 237, 0.18);
+    }
+
+    /* Markdown Prose Styling inside Chat */
+    .prose-chat pre {
+      background: #050507 !important;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 0.75rem;
+      padding: 0.875rem 1rem;
+      margin: 0.75rem 0;
+      overflow-x: auto;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.775rem;
+      color: #e4e4e7;
+    }
+    .prose-chat code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.775rem;
+      background: rgba(255, 255, 255, 0.07);
+      padding: 0.15rem 0.35rem;
+      border-radius: 0.35rem;
+    }
+    .prose-chat pre code {
+      background: transparent;
+      padding: 0;
+    }
+    .prose-chat p {
+      margin-bottom: 0.5rem;
+    }
+    .prose-chat p:last-child {
+      margin-bottom: 0;
+    }
+    .prose-chat ul, .prose-chat ol {
+      padding-left: 1.25rem;
+      margin: 0.5rem 0;
+      list-style-type: disc;
+    }
+
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #050507; }
+    ::-webkit-scrollbar-thumb { background: #222232; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #7c3aed; }
+  </style>
+</head>
+<body class="min-h-screen antialiased selection:bg-violet-500/30 selection:text-violet-200 bg-radial-top">
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef, useMemo } = React;
+
+    // ========================================================
+    // AXIOS PRODUCTION INSTANCE CONNECTED TO YOUR BACKEND
+    // ========================================================
+    const DEFAULT_BASE_URL = "https://agents-377s.onrender.com/";
+
+    const api = axios.create({
+      baseURL: DEFAULT_BASE_URL,
+      headers: { "Content-Type": "application/json" },
+      timeout: 60000, // 60s for LLM generation
+    });
+
+    // Automatically attach JWT token from localStorage on every request
+    api.interceptors.request.use((config) => {
+      const token = localStorage.getItem("agenthub_token");
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+      return config;
+    });
+
+    // ========================================================
+    // ICONS (Clean Inline SVGs)
+    // ========================================================
+    const Icons = {
+      Cube: () => (
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+        </svg>
+      ),
+      Search: () => (
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z" />
+        </svg>
+      ),
+      Sparkles: () => (
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+        </svg>
+      ),
+      Send: () => (
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+        </svg>
+      ),
+      Code: () => (
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+        </svg>
+      ),
+      Eye: () => (
+        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+        </svg>
+      ),
+      ArrowLeft: () => (
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+        </svg>
+      ),
+      Check: () => (
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+        </svg>
+      )
+    };
+
+    // ========================================================
+    // ROOT APP COMPONENT
+    // ========================================================
+    function App() {
+      // Hash-based routing so browser back/forward buttons & direct links work
+      const [route, setRoute] = useState(() => window.location.hash.replace("#", "") || "/");
+      const [backendOnline, setBackendOnline] = useState(null); // null = checking, true = online, false = offline
+      const [apiUrl, setApiUrl] = useState(DEFAULT_BASE_URL);
+      const [showApiConfig, setShowApiConfig] = useState(false);
+
+      // Authenticated User State
+      const [user, setUser] = useState(() => {
+        try {
+          const saved = localStorage.getItem("agenthub_user");
+          return saved ? JSON.parse(saved) : null;
+        } catch {
+          return null;
+        }
+      });
+
+      // Toast Notification
+      const [toast, setToast] = useState(null);
+      const showToast = (message, type = "info") => {
+        setToast({ message, type });
+        setTimeout(() => setToast(null), 4000);
+      };
+
+      // Listen to URL hash changes (e.g., #/agent/my-slug, #/create, #/login)
+      useEffect(() => {
+        const onHashChange = () => {
+          setRoute(window.location.hash.replace("#", "") || "/");
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        };
+        window.addEventListener("hashchange", onHashChange);
+        return () => window.removeEventListener("hashchange", onHashChange);
+      }, []);
+
+      const navigate = (path) => {
+        window.location.hash = path;
+      };
+
+      // Ping GET /health on your Express server
+      const checkBackendHealth = async () => {
+        try {
+          const res = await api.get("/health");
+          if (res.data?.status === "ok") {
+            setBackendOnline(true);
+          } else {
+            setBackendOnline(false);
+          }
+        } catch {
+          setBackendOnline(false);
+        }
+      };
+
+      useEffect(() => {
+        checkBackendHealth();
+        const interval = setInterval(checkBackendHealth, 15000);
+        return () => clearInterval(interval);
+      }, [apiUrl]);
+
+      const handleSaveApiUrl = (e) => {
+        e.preventDefault();
+        const cleaned = apiUrl.replace(/\/+$/, "");
+        localStorage.setItem("agenthub_api_url", cleaned);
+        api.defaults.baseURL = cleaned;
+        setApiUrl(cleaned);
+        setShowApiConfig(false);
+        checkBackendHealth();
+        showToast(`API endpoint updated to ${cleaned}`, "success");
+      };
+
+      const handleAuthSuccess = (userData, token) => {
+        localStorage.setItem("agenthub_token", token);
+        localStorage.setItem("agenthub_user", JSON.stringify(userData));
+        setUser(userData);
+        showToast(`Signed in as @${userData.username}`, "success");
+        navigate("/");
+      };
+
+      const handleLogout = () => {
+        localStorage.removeItem("agenthub_token");
+        localStorage.removeItem("agenthub_user");
+        setUser(null);
+        showToast("Signed out of your account");
+        navigate("/");
+      };
+
+      // Parse current route
+      const isAgentRoute = route.startsWith("/agent/");
+      const currentAgentSlug = isAgentRoute ? decodeURIComponent(route.replace("/agent/", "")) : null;
+
+      return (
+        <div className="min-h-screen flex flex-col">
+          {/* Toast Notification */}
+          {toast && (
+            <div className="fixed bottom-5 right-5 z-50 panel px-4 py-3 rounded-xl shadow-2xl border border-white/10 flex items-center gap-3 animate-fade-in">
+              <span className={`w-2 h-2 rounded-full ${
+                toast.type === "error" ? "bg-rose-500" : toast.type === "success" ? "bg-emerald-400" : "bg-violet-400"
+              }`} />
+              <span className="text-xs font-medium text-zinc-200">{toast.message}</span>
+            </div>
+          )}
+
+          {/* Top Navigation */}
+          <header className="sticky top-0 z-40 panel border-b border-white/[0.06]">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+              {/* Left: Brand & Links */}
+              <div className="flex items-center gap-8">
+                <button
+                  onClick={() => navigate("/")}
+                  className="flex items-center gap-3 text-left group focus:outline-none"
+                >
+                  <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-violet-950/50 border border-white/15 group-hover:scale-105 transition">
+                    <Icons.Cube />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-semibold tracking-tight text-white">AgentHub</span>
+                      <span className="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-violet-500/15 text-violet-300 border border-violet-500/20">
+                        v1.0
+                      </span>
+                    </div>
+                    <span className="block text-[11px] text-zinc-500">Hybrid XML Agent Registry</span>
+                  </div>
+                </button>
+
+                <nav className="hidden md:flex items-center gap-1">
+                  <button
+                    onClick={() => navigate("/")}
+                    className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition ${
+                      route === "/" ? "bg-white/[0.08] text-white" : "text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.03]"
+                    }`}
+                  >
+                    Explore Feed
+                  </button>
+                  <button
+                    onClick={() => (user ? navigate("/create") : navigate("/login"))}
+                    className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition ${
+                      route === "/create" ? "bg-white/[0.08] text-white" : "text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.03]"
+                    }`}
+                  >
+                    Creator Studio
+                  </button>
+                  <button
+                    onClick={() => navigate("/optimizer")}
+                    className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition ${
+                      route === "/optimizer" ? "bg-white/[0.08] text-white" : "text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.03]"
+                    }`}
+                  >
+                    Prompt Compiler
+                  </button>
+                </nav>
+              </div>
+
+              {/* Right: Backend Status & Auth */}
+              <div className="flex items-center gap-3">
+                {/* Live Backend Health Indicator */}
+                <div className="relative">
+                  <button
+                    onClick={() => setShowApiConfig(!showApiConfig)}
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-[11px] font-mono bg-surface-900 border border-white/[0.07] hover:border-white/15 text-zinc-300 transition"
+                    title="Click to configure Express Backend URL"
+                  >
+                    <span
+                      className={`w-2 h-2 rounded-full ${
+                        backendOnline === true
+                          ? "bg-emerald-400 shadow-[0_0_8px_#34d399]"
+                          : backendOnline === false
+                          ? "bg-rose-500"
+                          : "bg-amber-400 animate-pulse"
+                      }`}
+                    />
+                    <span className="hidden sm:inline">
+                      {backendOnline === true ? "API Connected" : backendOnline === false ? "API Offline" : "Checking..."}
+                    </span>
+                  </button>
+
+                  {showApiConfig && (
+                    <form
+                      onSubmit={handleSaveApiUrl}
+                      className="absolute right-0 mt-2 w-72 panel p-4 rounded-xl shadow-2xl border border-white/10 z-50 space-y-3"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium text-white">Express Backend URL</span>
+                        <span className="text-[10px] font-mono text-zinc-500">GET /health</span>
+                      </div>
+                      <input
+                        type="url"
+                        value={apiUrl}
+                        onChange={(e) => setApiUrl(e.target.value)}
+                        className="w-full bg-surface-950 border border-white/10 rounded-lg px-3 py-1.5 text-xs font-mono text-white focus:outline-none focus:border-violet-500"
+                        placeholder="http://localhost:3000"
+                      />
+                      <div className="flex justify-end gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setShowApiConfig(false)}
+                          className="text-xs text-zinc-400 hover:text-white px-2.5 py-1"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          className="bg-violet-600 hover:bg-violet-500 text-white text-xs font-medium px-3 py-1 rounded-lg"
+                        >
+                          Save & Ping
+                        </button>
+                      </div>
+                    </form>
+                  )}
+                </div>
+
+                {user ? (
+                  <div className="flex items-center gap-2.5">
+                    <button
+                      onClick={() => navigate("/create")}
+                      className="bg-violet-600 hover:bg-violet-500 text-white text-xs font-medium px-3.5 py-2 rounded-lg transition shadow-sm shadow-violet-950 flex items-center gap-1.5"
+                    >
+                      <span>+ Deploy Agent</span>
+                    </button>
+                    <button
+                      onClick={() => navigate("/profile")}
+                      className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-lg bg-surface-850 hover:bg-surface-800 border border-white/[0.07] transition"
+                    >
+                      <img
+                        src={user.avatarUrl || `https://api.dicebear.com/7.x/identicon/svg?seed=${user.username}`}
+                        alt={user.username}
+                        className="w-5 h-5 rounded-full bg-violet-950"
+                      />
+                      <span className="text-xs font-medium text-zinc-200 hidden sm:inline">
+                        {user.displayName || user.username}
+                      </span>
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => navigate("/login")}
+                      className="text-xs font-medium text-zinc-300 hover:text-white px-3 py-2 rounded-lg transition"
+                    >
+                      Sign In
+                    </button>
+                    <button
+                      onClick={() => navigate("/register")}
+                      className="bg-white text-surface-950 hover:bg-zinc-200 text-xs font-semibold px-3.5 py-2 rounded-lg transition"
+                    >
+                      Sign Up
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </header>
+
+          {/* Offline Banner if Express server is not running */}
+          {backendOnline === false && (
+            <div className="bg-rose-500/10 border-b border-rose-500/20 px-4 py-2.5 text-center">
+              <p className="text-xs text-rose-300">
+                Cannot reach Express backend at <code className="font-mono underline">{apiUrl}</code>. Make sure your Node.js server is running with <code className="font-mono bg-black/40 px-1.5 py-0.5 rounded">node server.js</code> and CORS is enabled.
+              </p>
+            </div>
+          )}
+
+          {/* Main View Router */}
+          <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            {route === "/" && (
+              <ExploreFeed
+                navigate={navigate}
+                user={user}
+                showToast={showToast}
+                backendOnline={backendOnline}
+              />
+            )}
+
+            {route === "/login" && (
+              <AuthPage
+                mode="login"
+                navigate={navigate}
+                onAuthSuccess={handleAuthSuccess}
+                showToast={showToast}
+              />
+            )}
+
+            {route === "/register" && (
+              <AuthPage
+                mode="register"
+                navigate={navigate}
+                onAuthSuccess={handleAuthSuccess}
+                showToast={showToast}
+              />
+            )}
+
+            {route === "/create" && (
+              <CreateAgentPage
+                user={user}
+                navigate={navigate}
+                showToast={showToast}
+              />
+            )}
+
+            {route === "/optimizer" && (
+              <StandaloneOptimizerPage showToast={showToast} />
+            )}
+
+            {route === "/profile" && (
+              <ProfilePage
+                user={user}
+                navigate={navigate}
+                onLogout={handleLogout}
+              />
+            )}
+
+            {isAgentRoute && currentAgentSlug && (
+              <AgentWorkspacePage
+                slug={currentAgentSlug}
+                navigate={navigate}
+                showToast={showToast}
+              />
+            )}
+          </main>
+
+          {/* Footer */}
+          <footer className="border-t border-white/[0.05] py-6 mt-16">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between text-xs text-zinc-500 gap-4">
+              <div className="flex items-center gap-2">
+                <span className="font-semibold text-zinc-400">AgentHub</span>
+                <span>— Connected to Express &amp; MongoDB</span>
+              </div>
+              <div className="font-mono text-[11px] text-zinc-500">
+                Endpoint: <span className="text-zinc-300">{apiUrl}</span>
+              </div>
+            </div>
+          </footer>
+        </div>
+      );
+    }
+
+    // ========================================================
+    // 1. EXPLORE FEED (Connected to GET /api/agents)
+    // ========================================================
+    function ExploreFeed({ navigate, user, showToast, backendOnline }) {
+      const [agents, setAgents] = useState([]);
+      const [loading, setLoading] = useState(true);
+      const [error, setError] = useState(null);
+      const [category, setCategory] = useState("All");
+      const [search, setSearch] = useState("");
+
+      const categories = ["All", "Engineering", "Architecture", "AI & ML", "Security", "Writing", "General"];
+
+      const fetchAgents = async () => {
+        setLoading(true);
+        setError(null);
+        try {
+          const params = {};
+          if (category !== "All") params.category = category;
+          if (search.trim()) params.search = search.trim();
+
+          const res = await api.get("/api/agents", { params });
+          setAgents(res.data.data || []);
+        } catch (err) {
+          setError(err.response?.data?.error || "Failed to load agents from backend (/api/agents).");
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      useEffect(() => {
+        const timer = setTimeout(fetchAgents, 220);
+        return () => clearTimeout(timer);
+      }, [category, search, backendOnline]);
+
+      return (
+        <div className="space-y-8">
+          {/* Hero Header */}
+          <div className="panel rounded-2xl p-8 sm:p-10 border border-white/[0.07] flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+            <div className="max-w-2xl space-y-3">
+              <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-md bg-violet-500/10 border border-violet-500/20 text-violet-300 text-[11px] font-mono">
+                <Icons.Sparkles />
+                <span>HYBRID XML SYSTEM ARCHITECT</span>
+              </div>
+              <h1 className="text-2xl sm:text-4xl font-semibold text-white tracking-tight">
+                Production AI Agents, built by developers.
+              </h1>
+              <p className="text-sm text-zinc-400 leading-relaxed">
+                Transform raw instructions into deterministic XML-structured agents stored in MongoDB. Each agent gets a dedicated workspace URL ready for live multi-turn sessions.
+              </p>
+            </div>
+
+            <div className="flex flex-col sm:flex-row lg:flex-col gap-3 shrink-0">
+              <button
+                onClick={() => (user ? navigate("/create") : navigate("/login"))}
+                className="bg-violet-600 hover:bg-violet-500 text-white text-xs font-semibold px-5 py-3 rounded-xl transition shadow-lg shadow-violet-950/60 flex items-center justify-center gap-2"
+              >
+                <span>+ Create New Agent</span>
+              </button>
+              <button
+                onClick={() => navigate("/optimizer")}
+                className="bg-surface-850 hover:bg-surface-800 text-zinc-300 border border-white/[0.08] text-xs font-medium px-5 py-2.5 rounded-xl transition text-center"
+              >
+                Test Raw Prompt Optimizer
+              </button>
+            </div>
+          </div>
+
+          {/* Search & Category Bar */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/[0.06] pb-4">
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0">
+              {categories.map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => setCategory(cat)}
+                  className={`px-3.5 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition ${
+                    category === cat
+                      ? "bg-violet-600/20 text-violet-300 border border-violet-500/30"
+                      : "text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.03] border border-transparent"
+                  }`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+
+            <div className="relative w-full md:w-80">
+              <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-zinc-500">
+                <Icons.Search />
+              </div>
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search agents in database..."
+                className="w-full bg-surface-900 border border-white/[0.08] rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-violet-500 transition"
+              />
+            </div>
+          </div>
+
+          {/* States: Loading / Error / Empty / Grid */}
+          {loading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              {[1, 2, 3, 4, 5, 6].map((n) => (
+                <div key={n} className="panel rounded-2xl p-5 h-48 animate-pulse flex flex-col justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-11 h-11 rounded-xl bg-white/5" />
+                    <div className="space-y-2 flex-1">
+                      <div className="h-3.5 bg-white/10 rounded w-2/3" />
+                      <div className="h-2.5 bg-white/5 rounded w-1/3" />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="h-2.5 bg-white/5 rounded w-full" />
+                    <div className="h-2.5 bg-white/5 rounded w-4/5" />
+                  </div>
+                  <div className="h-3 bg-white/5 rounded w-1/2" />
+                </div>
+              ))}
+            </div>
+          ) : error ? (
+            <div className="panel rounded-2xl p-10 text-center max-w-lg mx-auto my-8 space-y-4 border border-rose-500/20">
+              <p className="text-sm font-medium text-rose-300">{error}</p>
+              <p className="text-xs text-zinc-400">
+                Ensure your Express server includes the <code className="font-mono text-zinc-200">GET /api/agents</code> route and MongoDB is connected.
+              </p>
+              <button
+                onClick={fetchAgents}
+                className="bg-white/10 hover:bg-white/15 text-white text-xs font-medium px-4 py-2 rounded-lg transition"
+              >
+                Retry Connection
+              </button>
+            </div>
+          ) : agents.length === 0 ? (
+            <div className="panel rounded-2xl p-14 text-center space-y-4">
+              <div className="w-12 h-12 rounded-2xl bg-violet-500/10 border border-violet-500/20 text-violet-400 mx-auto flex items-center justify-center">
+                <Icons.Cube />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-base font-semibold text-white">No agents in the database yet</h3>
+                <p className="text-xs text-zinc-400 max-w-md mx-auto">
+                  Be the first creator to compile and deploy an AI Agent to MongoDB.
+                </p>
+              </div>
+              <button
+                onClick={() => (user ? navigate("/create") : navigate("/register"))}
+                className="bg-violet-600 hover:bg-violet-500 text-white text-xs font-semibold px-5 py-2.5 rounded-xl transition"
+              >
+                {user ? "Deploy Your First Agent" : "Create Creator Account"}
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              {agents.map((agent) => (
+                <div
+                  key={agent._id || agent.slug}
+                  onClick={() => navigate(`/agent/${agent.slug}`)}
+                  className="card-interactive rounded-2xl p-5 cursor-pointer flex flex-col justify-between group"
+                >
+                  <div>
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-3.5">
+                        <img
+                          src={agent.avatarUrl || `https://api.dicebear.com/7.x/bottts/svg?seed=${agent.slug}`}
+                          alt={agent.name}
+                          className="w-11 h-11 rounded-xl bg-surface-850 border border-white/10 p-1"
+                        />
+                        <div>
+                          <h3 className="text-sm font-semibold text-zinc-100 group-hover:text-violet-300 transition line-clamp-1">
+                            {agent.name}
+                          </h3>
+                          <span className="inline-block mt-1 text-[10px] font-medium text-zinc-400 bg-white/[0.04] px-2 py-0.5 rounded border border-white/[0.05]">
+                            {agent.category || "General"}
+                          </span>
+                        </div>
+                      </div>
+                      <span className="text-[10px] font-mono text-violet-400 bg-violet-500/10 border border-violet-500/20 px-2 py-0.5 rounded">
+                        XML
+                      </span>
+                    </div>
+
+                    <p className="mt-4 text-xs text-zinc-400 leading-relaxed line-clamp-3">
+                      {agent.description}
+                    </p>
+                  </div>
+
+                  <div className="mt-6 pt-4 border-t border-white/[0.05] flex items-center justify-between text-xs text-zinc-500">
+                    <div className="flex items-center gap-2">
+                      <img
+                        src={agent.creator?.avatarUrl || `https://api.dicebear.com/7.x/identicon/svg?seed=${agent.creator?.username || "user"}`}
+                        alt="creator"
+                        className="w-5 h-5 rounded-full bg-surface-800"
+                      />
+                      <span className="text-zinc-400 font-medium truncate max-w-[140px]">
+                        {agent.creator?.displayName || `@${agent.creator?.username || "creator"}`}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5 font-mono text-[11px] text-zinc-400">
+                      <Icons.Eye />
+                      <span>{agent.viewsCount || 0}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // ========================================================
+    // 2. AUTH PAGE (POST /api/auth/login & POST /api/auth/register)
+    // ========================================================
+    function AuthPage({ mode, navigate, onAuthSuccess, showToast }) {
+      const isLogin = mode === "login";
+      const [username, setUsername] = useState("");
+      const [displayName, setDisplayName] = useState("");
+      const [email, setEmail] = useState("");
+      const [password, setPassword] = useState("");
+      const [bio, setBio] = useState("");
+      const [loading, setLoading] = useState(false);
+      const [error, setError] = useState("");
+
+      const handleSubmit = async (e) => {
+        e.preventDefault();
+        setError("");
+        setLoading(true);
+
+        try {
+          const endpoint = isLogin ? "/api/auth/login" : "/api/auth/register";
+          const payload = isLogin
+            ? { email, password }
+            : { username: username.trim(), displayName: displayName.trim(), email: email.trim(), password, bio };
+
+          const res = await api.post(endpoint, payload);
+          if (res.data?.success && res.data?.token) {
+            onAuthSuccess(res.data.user, res.data.token);
+          } else {
+            throw new Error(res.data?.error || "Authentication failed");
+          }
+        } catch (err) {
+          setError(err.response?.data?.error || err.message || "Could not connect to authentication server.");
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      return (
+        <div className="max-w-md mx-auto my-8">
+          <div className="panel rounded-2xl p-8 border border-white/[0.08] shadow-2xl">
+            <div className="space-y-1.5 mb-6">
+              <h2 className="text-xl font-semibold text-white">
+                {isLogin ? "Sign in to AgentHub" : "Create your creator account"}
+              </h2>
+              <p className="text-xs text-zinc-400">
+                {isLogin
+                  ? "Authenticate with your account to build and manage AI agents."
+                  : "Register on the platform to publish XML-engineered agents."}
+              </p>
+            </div>
+
+            {error && (
+              <div className="mb-5 p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/25 text-xs text-rose-300">
+                {error}
+              </div>
+            )}
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {!isLogin && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                  <div>
+                    <label className="block text-xs font-medium text-zinc-300 mb-1.5">Username</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="abdulrahman"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      className="w-full bg-surface-950 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-violet-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-zinc-300 mb-1.5">Display Name</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Abdulrahman Z."
+                      value={displayName}
+                      onChange={(e) => setDisplayName(e.target.value)}
+                      className="w-full bg-surface-950 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-violet-500"
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <label className="block text-xs font-medium text-zinc-300 mb-1.5">Email Address</label>
+                <input
+                  type="email"
+                  required
+                  placeholder="developer@domain.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full bg-surface-950 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-violet-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-zinc-300 mb-1.5">Password</label>
+                <input
+                  type="password"
+                  required
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full bg-surface-950 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-violet-500"
+                />
+              </div>
+
+              {!isLogin && (
+                <div>
+                  <label className="block text-xs font-medium text-zinc-300 mb-1.5">Creator Bio</label>
+                  <input
+                    type="text"
+                    placeholder="Backend & AI Systems Engineer"
+                    value={bio}
+                    onChange={(e) => setBio(e.target.value)}
+                    className="w-full bg-surface-950 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-violet-500"
+                  />
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-violet-600 hover:bg-violet-500 disabled:opacity-50 text-white font-semibold text-xs py-3 rounded-xl transition shadow-lg shadow-violet-950/60 mt-2"
+              >
+                {loading ? "Authenticating..." : isLogin ? "Sign In" : "Create Account"}
+              </button>
+            </form>
+
+            <div className="mt-6 pt-5 border-t border-white/[0.06] text-center text-xs text-zinc-400">
+              {isLogin ? "New to AgentHub?" : "Already registered?"}{" "}
+              <button
+                onClick={() => navigate(isLogin ? "/register" : "/login")}
+                className="text-violet-400 hover:text-violet-300 font-semibold ml-1"
+              >
+                {isLogin ? "Create an account" : "Sign in"}
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // ========================================================
+    // 3. CREATOR STUDIO (POST /api/optimize-prompt & POST /api/agents)
+    // ========================================================
+    function CreateAgentPage({ user, navigate, showToast }) {
+      const [name, setName] = useState("");
+      const [category, setCategory] = useState("Engineering");
+      const [description, setDescription] = useState("");
+      const [rawPrompt, setRawPrompt] = useState("");
+      const [previewXml, setPreviewXml] = useState("");
+      const [starterInput, setStarterInput] = useState("");
+      const [optimizing, setOptimizing] = useState(false);
+      const [publishing, setPublishing] = useState(false);
+
+      if (!user) {
+        return (
+          <div className="panel rounded-2xl p-12 text-center max-w-md mx-auto my-10 space-y-4">
+            <h2 className="text-lg font-semibold text-white">Authentication Required</h2>
+            <p className="text-xs text-zinc-400">
+              Please sign in or register an account to create and save AI agents to the database.
+            </p>
+            <button
+              onClick={() => navigate("/login")}
+              className="bg-violet-600 hover:bg-violet-500 text-white text-xs font-semibold px-5 py-2.5 rounded-xl"
+            >
+              Sign In to Continue
+            </button>
+          </div>
+        );
+      }
+
+      // Calls your POST /api/optimize-prompt endpoint directly to preview the XML
+      const handlePreviewXml = async () => {
+        if (!rawPrompt.trim()) {
+          showToast("Enter raw instructions first to preview XML compilation", "error");
+          return;
+        }
+        setOptimizing(true);
+        try {
+          const res = await api.post("/api/optimize-prompt", { prompt: rawPrompt });
+          if (res.data?.success) {
+            setPreviewXml(res.data.data.optimizedPrompt);
+            showToast("Compiled via Gemini META_SYSTEM_PROMPT", "success");
+          }
+        } catch (err) {
+          showToast(err.response?.data?.error || "Failed to compile prompt via /api/optimize-prompt", "error");
+        } finally {
+          setOptimizing(false);
+        }
+      };
+
+      // Calls your POST /api/agents endpoint to create and store the agent in MongoDB
+      const handlePublishAgent = async (e) => {
+        e.preventDefault();
+        if (!name.trim() || !rawPrompt.trim() || !description.trim()) {
+          showToast("Please fill in name, description, and raw instructions", "error");
+          return;
+        }
+        setPublishing(true);
+        try {
+          const starterPrompts = starterInput
+            .split(",")
+            .map((s) => s.trim())
+            .filter(Boolean);
+
+          const res = await api.post("/api/agents", {
+            name: name.trim(),
+            description: description.trim(),
+            category,
+            rawPrompt: rawPrompt.trim(),
+            starterPrompts,
+          });
+
+          if (res.data?.success && res.data?.data) {
+            const created = res.data.data;
+            showToast(`Agent "${created.name}" deployed!`, "success");
+            navigate(`/agent/${created.slug}`);
+          }
+        } catch (err) {
+          showToast(err.response?.data?.error || "Error creating agent on /api/agents", "error");
+        } finally {
+          setPublishing(false);
+        }
+      };
+
+      return (
+        <div className="max-w-6xl mx-auto space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/[0.06] pb-5">
+            <div>
+              <h1 className="text-xl font-semibold text-white">Creator Studio — Deploy New Agent</h1>
+              <p className="text-xs text-zinc-400 mt-1">
+                Your raw prompt will be compiled into a Hybrid XML System Prompt by Gemini and persisted to MongoDB.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setName("Rust & Axum Code Auditor");
+                setCategory("Engineering");
+                setDescription("Reviews Rust backend code for ownership bottlenecks, async Tokio anti-patterns, and SQLx query safety.");
+                setRawPrompt("You are an elite Rust backend architect. Review user code for borrow checker issues, unnecessary clones, and async Tokio performance. Explain in clear Arabic while keeping code and technical terms in English.");
+                setStarterInput("Audit my Axum handler for unnecessary .clone() calls, How do I share a connection pool safely in Tokio?");
+              }}
+              className="text-xs font-medium text-violet-300 bg-violet-500/10 hover:bg-violet-500/20 border border-violet-500/20 px-3.5 py-2 rounded-xl transition self-start"
+            >
+              Load Production Template
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            {/* Left Column: Agent Configuration Form */}
+            <form onSubmit={handlePublishAgent} className="lg:col-span-7 panel rounded-2xl p-6 space-y-5">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="sm:col-span-2">
+                  <label className="block text-xs font-medium text-zinc-300 mb-1.5">Agent Name *</label>
+                  <input
+                    type="text"
+                    required
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="e.g., Rust Systems Architect"
+                    className="w-full bg-surface-950 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-violet-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-zinc-300 mb-1.5">Category</label>
+                  <select
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
+                    className="w-full bg-surface-950 border border-white/10 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-violet-500"
+                  >
+                    <option>Engineering</option>
+                    <option>Architecture</option>
+                    <option>AI & ML</option>
+                    <option>Security</option>
+                    <option>Writing</option>
+                    <option>General</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-zinc-300 mb-1.5">Public Description *</label>
+                <input
+                  type="text"
+                  required
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Concise summary shown on the Explore card and Agent header..."
+                  className="w-full bg-surface-950 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-violet-500"
+                />
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-xs font-medium text-zinc-300">
+                    Raw System Instructions (Arabic or English) *
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handlePreviewXml}
+                    disabled={optimizing}
+                    className="text-xs text-violet-400 hover:text-violet-300 font-medium flex items-center gap-1.5 disabled:opacity-50"
+                  >
+                    <Icons.Sparkles />
+                    <span>{optimizing ? "Compiling with Gemini..." : "Test Compile XML"}</span>
+                  </button>
+                </div>
+                <textarea
+                  rows="6"
+                  required
+                  value={rawPrompt}
+                  onChange={(e) => setRawPrompt(e.target.value)}
+                  placeholder="Write what you want this agent to do. Your backend's optimizeSystemPrompt() will convert this into a deterministic Hybrid XML schema..."
+                  className="w-full bg-surface-950 border border-white/10 rounded-xl p-3.5 text-xs text-white leading-relaxed focus:outline-none focus:border-violet-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-zinc-300 mb-1.5">
+                  Starter Conversation Prompts (comma-separated)
+                </label>
+                <input
+                  type="text"
+                  value={starterInput}
+                  onChange={(e) => setStarterInput(e.target.value)}
+                  placeholder="Review my code, Explain this concept, Generate a microservice template"
+                  className="w-full bg-surface-950 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-violet-500"
+                />
+              </div>
+
+              <div className="pt-2 flex items-center justify-end gap-3 border-t border-white/[0.06]">
+                <button
+                  type="button"
+                  onClick={() => navigate("/")}
+                  className="px-4 py-2.5 rounded-xl text-xs text-zinc-400 hover:text-white transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={publishing}
+                  className="bg-violet-600 hover:bg-violet-500 disabled:opacity-50 text-white text-xs font-semibold px-6 py-2.5 rounded-xl transition shadow-lg shadow-violet-950/60"
+                >
+                  {publishing ? "Compiling & Saving to DB..." : "Deploy Agent to Production"}
+                </button>
+              </div>
+            </form>
+
+            {/* Right Column: Live XML Output Inspector */}
+            <div className="lg:col-span-5 panel rounded-2xl p-6 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between border-b border-white/[0.06] pb-3">
+                  <div className="flex items-center gap-2">
+                    <Icons.Code />
+                    <span className="text-xs font-semibold text-zinc-200">Hybrid XML Output Preview</span>
+                  </div>
+                  <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded">
+                    POST /api/optimize-prompt
+                  </span>
+                </div>
+
+                <pre className="mt-4 p-4 rounded-xl bg-surface-950 border border-white/[0.06] text-[11px] font-mono text-zinc-300 overflow-x-auto max-h-[390px] leading-relaxed">
+                  {previewXml ||
+                    `<!-- Click "Test Compile XML" to preview the exact XML generated by your Express server, or click "Deploy Agent" to compile and save directly to MongoDB. -->`}
+                </pre>
+              </div>
+
+              <div className="mt-4 p-3.5 rounded-xl bg-white/[0.02] border border-white/[0.05] text-[11px] text-zinc-400 leading-relaxed">
+                When saved, the backend generates a unique URL slug (<code className="text-zinc-200 font-mono">#/agent/:slug</code>) and injects this XML into Gemini's <code className="text-zinc-200 font-mono">systemInstruction</code> for every user session.
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // ========================================================
+    // 4. DEDICATED AGENT WORKSPACE PAGE (GET /api/agents/:slug & POST /api/agents/:slug/chat)
+    // ========================================================
+    function AgentWorkspacePage({ slug, navigate, showToast }) {
+      const [agent, setAgent] = useState(null);
+      const [loadingAgent, setLoadingAgent] = useState(true);
+      const [error, setError] = useState(null);
+
+      const [messages, setMessages] = useState([]);
+      const [input, setInput] = useState("");
+      const [sending, setSending] = useState(false);
+      const [showSystemXml, setShowSystemXml] = useState(false);
+      const chatBottomRef = useRef(null);
+
+      useEffect(() => {
+        const fetchAgentDetails = async () => {
+          setLoadingAgent(true);
+          setError(null);
+          try {
+            const res = await api.get(`/api/agents/${slug}`);
+            if (res.data?.success && res.data?.data) {
+              setAgent(res.data.data);
+            } else {
+              throw new Error("Agent not found");
+            }
+          } catch (err) {
+            setError(err.response?.data?.error || "Could not load agent from /api/agents/" + slug);
+          } finally {
+            setLoadingAgent(false);
+          }
+        };
+        fetchAgentDetails();
+      }, [slug]);
+
+      useEffect(() => {
+        chatBottomRef.current?.scrollIntoView({ behavior: "smooth" });
+      }, [messages, sending]);
+
+      const handleSendMessage = async (textOverride) => {
+        const messageText = (textOverride ?? input).trim();
+        if (!messageText || sending) return;
+
+        const updatedHistory = [...messages, { role: "user", text: messageText }];
+        setMessages(updatedHistory);
+        setInput("");
+        setSending(true);
+
+        try {
+          const res = await api.post(`/api/agents/${slug}/chat`, {
+            message: messageText,
+            history: messages,
+          });
+
+          if (res.data?.success) {
+            setMessages([...updatedHistory, { role: "model", text: res.data.reply }]);
+          } else {
+            throw new Error(res.data?.error || "Empty response from agent");
+          }
+        } catch (err) {
+          const errMsg = err.response?.data?.error || err.message || "Error communicating with agent";
+          showToast(errMsg, "error");
+          setMessages([...updatedHistory, { role: "model", text: `⚠️ **Error:** ${errMsg}` }]);
+        } finally {
+          setSending(false);
+        }
+      };
+
+      const copyAgentUrl = () => {
+        navigator.clipboard?.writeText(window.location.href);
+        showToast("Agent page URL copied to clipboard!", "success");
+      };
+
+      if (loadingAgent) {
+        return (
+          <div className="py-20 text-center space-y-3">
+            <div className="w-8 h-8 border-2 border-violet-500 border-t-transparent rounded-full animate-spin mx-auto" />
+            <p className="text-xs text-zinc-400 font-mono">Loading agent workspace from MongoDB...</p>
+          </div>
+        );
+      }
+
+      if (error || !agent) {
+        return (
+          <div className="panel rounded-2xl p-12 text-center max-w-md mx-auto my-12 space-y-4">
+            <h2 className="text-base font-semibold text-white">Agent Not Found</h2>
+            <p className="text-xs text-zinc-400">{error}</p>
+            <button
+              onClick={() => navigate("/")}
+              className="bg-white/10 hover:bg-white/15 text-white text-xs font-medium px-4 py-2 rounded-xl"
+            >
+              ← Back to Explore
+            </button>
+          </div>
+        );
+      }
+
+      return (
+        <div className="space-y-5">
+          {/* Top Bar */}
+          <div className="flex items-center justify-between">
+            <button
+              onClick={() => navigate("/")}
+              className="flex items-center gap-2 text-xs text-zinc-400 hover:text-white transition"
+            >
+              <Icons.ArrowLeft />
+              <span>Back to Explore Feed</span>
+            </button>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={copyAgentUrl}
+                className="px-3 py-1.5 rounded-lg text-xs font-mono bg-surface-900 border border-white/[0.08] text-zinc-300 hover:border-white/20 transition"
+              >
+                Share URL
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            {/* Sidebar: Agent Identity & Creator Info */}
+            <aside className="lg:col-span-4 space-y-5">
+              <div className="panel rounded-2xl p-6 space-y-5">
+                <div className="flex items-start gap-4">
+                  <img
+                    src={agent.avatarUrl || `https://api.dicebear.com/7.x/bottts/svg?seed=${agent.slug}`}
+                    alt={agent.name}
+                    className="w-14 h-14 rounded-2xl bg-surface-850 border border-white/10 p-1.5 shrink-0"
+                  />
+                  <div>
+                    <h1 className="text-base font-semibold text-white leading-snug">{agent.name}</h1>
+                    <div className="flex items-center gap-2 mt-1.5">
+                      <span className="text-[11px] text-violet-300 bg-violet-500/10 border border-violet-500/20 px-2 py-0.5 rounded">
+                        {agent.category || "General"}
+                      </span>
+                      <span className="text-[11px] font-mono text-zinc-500">
+                        {agent.viewsCount || 1} views
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <p className="text-xs text-zinc-300 leading-relaxed">
+                  {agent.description}
+                </p>
+
+                {/* Creator Info Card */}
+                <div className="pt-4 border-t border-white/[0.06]">
+                  <span className="block text-[10px] font-mono uppercase tracking-wider text-zinc-500 mb-2">
+                    Published By
+                  </span>
+                  <div className="flex items-center gap-3 bg-surface-950/80 p-3 rounded-xl border border-white/[0.05]">
+                    <img
+                      src={agent.creator?.avatarUrl || `https://api.dicebear.com/7.x/identicon/svg?seed=${agent.creator?.username || "creator"}`}
+                      alt="creator"
+                      className="w-9 h-9 rounded-full bg-surface-800"
+                    />
+                    <div className="overflow-hidden">
+                      <p className="text-xs font-semibold text-white truncate">
+                        {agent.creator?.displayName || agent.creator?.username || "Creator"}
+                      </p>
+                      <p className="text-[11px] text-zinc-500 truncate">
+                        @{agent.creator?.username || "developer"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Toggle XML System Prompt */}
+                <div className="pt-2">
+                  <button
+                    onClick={() => setShowSystemXml(!showSystemXml)}
+                    className="w-full py-2.5 px-3.5 rounded-xl bg-surface-950 hover:bg-surface-900 border border-white/[0.07] text-xs text-zinc-300 flex items-center justify-between transition"
+                  >
+                    <span className="flex items-center gap-2">
+                      <Icons.Code />
+                      <span>System Prompt (Hybrid XML)</span>
+                    </span>
+                    <span className="font-mono text-[10px] text-violet-400">
+                      {showSystemXml ? "HIDE" : "INSPECT"}
+                    </span>
+                  </button>
+
+                  {showSystemXml && (
+                    <pre
+                      dir="ltr"
+                      className="mt-3 p-3.5 rounded-xl bg-surface-950 border border-white/[0.07] text-[11px] font-mono text-emerald-400/90 overflow-x-auto max-h-72 leading-relaxed"
+                    >
+                      {agent.systemPrompt}
+                    </pre>
+                  )}
+                </div>
+              </div>
+            </aside>
+
+            {/* Main Chat Playground */}
+            <section className="lg:col-span-8 panel rounded-2xl flex flex-col h-[76vh] overflow-hidden">
+              {/* Chat Header */}
+              <div className="px-6 py-4 border-b border-white/[0.06] flex items-center justify-between bg-surface-900/50">
+                <div className="flex items-center gap-2.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                  <span className="text-xs font-semibold text-zinc-200">{agent.name}</span>
+                  <span className="text-[11px] font-mono text-zinc-500">POST /api/agents/{agent.slug}/chat</span>
+                </div>
+                {messages.length > 0 && (
+                  <button
+                    onClick={() => setMessages([])}
+                    className="text-xs text-zinc-500 hover:text-zinc-300 transition"
+                  >
+                    Reset Session
+                  </button>
+                )}
+              </div>
+
+              {/* Message List */}
+              <div className="flex-1 overflow-y-auto p-6 space-y-5">
+                {messages.length === 0 ? (
+                  <div className="h-full flex flex-col items-center justify-center text-center max-w-md mx-auto space-y-5">
+                    <img
+                      src={agent.avatarUrl || `https://api.dicebear.com/7.x/bottts/svg?seed=${agent.slug}`}
+                      alt={agent.name}
+                      className="w-16 h-16 rounded-2xl bg-surface-850 border border-white/10 p-2"
+                    />
+                    <div className="space-y-1.5">
+                      <h3 className="text-sm font-semibold text-white">Start interacting with {agent.name}</h3>
+                      <p className="text-xs text-zinc-400 leading-relaxed">
+                        Every message you send is processed by Gemini using this agent's compiled XML system instructions.
+                      </p>
+                    </div>
+
+                    {agent.starterPrompts?.length > 0 && (
+                      <div className="w-full flex flex-wrap justify-center gap-2 pt-2">
+                        {agent.starterPrompts.map((sp, i) => (
+                          <button
+                            key={i}
+                            onClick={() => handleSendMessage(sp)}
+                            className="text-xs text-zinc-300 bg-surface-900 hover:bg-violet-600/20 hover:text-violet-200 hover:border-violet-500/30 border border-white/[0.07] px-3.5 py-2 rounded-xl transition text-left"
+                          >
+                            {sp}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  messages.map((msg, idx) => (
+                    <div
+                      key={idx}
+                      className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+                    >
+                      <div
+                        dir="auto"
+                        className={`max-w-[85%] rounded-2xl px-4 py-3 text-xs leading-relaxed ${
+                          msg.role === "user"
+                            ? "bg-violet-600 text-white"
+                            : "bg-surface-850 border border-white/[0.07] text-zinc-200 prose-chat"
+                        }`}
+                      >
+                        {msg.role === "user" ? (
+                          <div className="whitespace-pre-wrap">{msg.text}</div>
+                        ) : (
+                          <div
+                            dangerouslySetInnerHTML={{
+                              __html: marked.parse(msg.text || ""),
+                            }}
+                          />
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
+
+                {sending && (
+                  <div className="flex justify-start">
+                    <div className="bg-surface-850 border border-white/[0.07] rounded-2xl px-4 py-3 text-xs text-zinc-400 flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-violet-400 animate-ping" />
+                      <span>{agent.name} is thinking...</span>
+                    </div>
+                  </div>
+                )}
+                <div ref={chatBottomRef} />
+              </div>
+
+              {/* Input Bar */}
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handleSendMessage();
+                }}
+                className="p-4 border-t border-white/[0.06] bg-surface-900/60 flex items-center gap-3"
+              >
+                <input
+                  type="text"
+                  dir="auto"
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  placeholder={`Message ${agent.name}...`}
+                  className="flex-1 bg-surface-950 border border-white/10 rounded-xl px-4 py-3 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-violet-500 transition"
+                />
+                <button
+                  type="submit"
+                  disabled={sending || !input.trim()}
+                  className="bg-violet-600 hover:bg-violet-500 disabled:opacity-40 text-white px-5 py-3 rounded-xl text-xs font-semibold transition flex items-center gap-2"
+                >
+                  <span>Send</span>
+                  <Icons.Send />
+                </button>
+              </form>
+            </section>
+          </div>
+        </div>
+      );
+    }
+
+    // ========================================================
+    // 5. STANDALONE PROMPT COMPILER (Directly tests your original POST /api/optimize-prompt)
+    // ========================================================
+    function StandaloneOptimizerPage({ showToast }) {
+      const [rawPrompt, setRawPrompt] = useState("");
+      const [result, setResult] = useState(null);
+      const [loading, setLoading] = useState(false);
+
+      const handleOptimize = async (e) => {
+        e.preventDefault();
+        if (!rawPrompt.trim()) return;
+        setLoading(true);
+        try {
+          const res = await api.post("/api/optimize-prompt", { prompt: rawPrompt });
+          if (res.data?.success) {
+            setResult(res.data.data);
+            showToast("Prompt optimized successfully!", "success");
+          }
+        } catch (err) {
+          showToast(err.response?.data?.error || "Error calling /api/optimize-prompt", "error");
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      return (
+        <div className="max-w-4xl mx-auto space-y-6">
+          <div>
+            <h1 className="text-xl font-semibold text-white">Direct Hybrid XML Prompt Compiler</h1>
+            <p className="text-xs text-zinc-400 mt-1">
+              Connected directly to your <code className="font-mono text-zinc-200">POST /api/optimize-prompt</code> route.
+            </p>
+          </div>
+
+          <form onSubmit={handleOptimize} className="panel rounded-2xl p-6 space-y-4">
+            <textarea
+              rows="5"
+              dir="auto"
+              required
+              value={rawPrompt}
+              onChange={(e) => setRawPrompt(e.target.value)}
+              placeholder="اكتب الـ Prompt الخام هنا (بالعربي أو الإنجليزي) لتحويله إلى Hybrid XML System Prompt..."
+              className="w-full bg-surface-950 border border-white/10 rounded-xl p-4 text-xs text-white leading-relaxed focus:outline-none focus:border-violet-500"
+            />
+            <div className="flex justify-end">
+              <button
+                type="submit"
+                disabled={loading}
+                className="bg-violet-600 hover:bg-violet-500 disabled:opacity-50 text-white text-xs font-semibold px-5 py-2.5 rounded-xl transition flex items-center gap-2"
+              >
+                <Icons.Sparkles />
+                <span>{loading ? "Optimizing via Gemini..." : "Compile to Hybrid XML"}</span>
+              </button>
+            </div>
+          </form>
+
+          {result && (
+            <div className="panel rounded-2xl p-6 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-emerald-400">Optimized XML Output</span>
+                <button
+                  onClick={() => {
+                    navigator.clipboard?.writeText(result.optimizedPrompt);
+                    showToast("XML copied to clipboard!", "success");
+                  }}
+                  className="text-xs text-zinc-300 bg-white/5 hover:bg-white/10 px-3 py-1 rounded-lg"
+                >
+                  Copy XML
+                </button>
+              </div>
+              <pre
+                dir="ltr"
+                className="p-4 rounded-xl bg-surface-950 border border-white/10 text-xs font-mono text-zinc-200 overflow-x-auto leading-relaxed"
+              >
+                {result.optimizedPrompt}
+              </pre>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // ========================================================
+    // 6. CREATOR PROFILE PAGE
+    // ========================================================
+    function ProfilePage({ user, navigate, onLogout }) {
+      const [myAgents, setMyAgents] = useState([]);
+      const [loading, setLoading] = useState(true);
+
+      useEffect(() => {
+        if (!user) return;
+        api.get("/api/agents")
+          .then((res) => {
+            const all = res.data.data || [];
+            setMyAgents(all.filter((a) => a.creator?.username === user.username || a.creator?._id === user.id));
+          })
+          .catch(() => {})
+          .finally(() => setLoading(false));
+      }, [user]);
+
+      if (!user) {
+        navigate("/login");
+        return null;
+      }
+
+      return (
+        <div className="max-w-5xl mx-auto space-y-8">
+          <div className="panel rounded-2xl p-6 sm:p-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+            <div className="flex items-center gap-4">
+              <img
+                src={user.avatarUrl || `https://api.dicebear.com/7.x/identicon/svg?seed=${user.username}`}
+                alt={user.username}
+                className="w-16 h-16 rounded-2xl bg-surface-800 border border-white/10"
+              />
+              <div>
+                <h1 className="text-lg font-semibold text-white">{user.displayName || user.username}</h1>
+                <p className="text-xs font-mono text-zinc-400">@{user.username}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => navigate("/create")}
+                className="bg-violet-600 hover:bg-violet-500 text-white text-xs font-semibold px-4 py-2 rounded-xl transition"
+              >
+                + New Agent
+              </button>
+              <button
+                onClick={onLogout}
+                className="bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/20 text-xs font-medium px-4 py-2 rounded-xl transition"
+              >
+                Sign Out
+              </button>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <h2 className="text-sm font-semibold text-zinc-200">Your Deployed Agents ({myAgents.length})</h2>
+            {loading ? (
+              <p className="text-xs text-zinc-500 font-mono">Loading your agents...</p>
+            ) : myAgents.length === 0 ? (
+              <div className="panel rounded-2xl p-10 text-center space-y-3">
+                <p className="text-xs text-zinc-400">You haven't deployed any agents yet.</p>
+                <button
+                  onClick={() => navigate("/create")}
+                  className="bg-violet-600 text-white text-xs font-medium px-4 py-2 rounded-xl"
+                >
+                  Create Your First Agent
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                {myAgents.map((agent) => (
+                  <div
+                    key={agent._id}
+                    onClick={() => navigate(`/agent/${agent.slug}`)}
+                    className="card-interactive rounded-2xl p-5 cursor-pointer space-y-3"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-semibold text-white">{agent.name}</span>
+                      <span className="text-[11px] font-mono text-zinc-400">{agent.viewsCount} views</span>
+                    </div>
+                    <p className="text-xs text-zinc-400 line-clamp-2">{agent.description}</p>
+                    <div className="text-[11px] font-mono text-violet-400 pt-2">
+                      #/agent/{agent.slug} →
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById("root"));
+    root.render(<App />);
+  </script>
+</body>
+</html>
