@@ -1,28 +1,32 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="ar" dir="rtl">
 
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>AgentTube — AI Agent Studio & Hub</title>
+  <title>AgentTube — AI Agent Studio</title>
 
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
-      darkMode: 'class',
       theme: {
         extend: {
           colors: {
-            bgMain: '#070B14',
-            bgSurface: '#0D1424',
-            bgCard: '#131C31',
-            bgElevated: '#1C2742',
-            accent: '#8B7CF7',
-            accentHover: '#6366F1',
+            cream: '#F6F5F0',
+            creamDark: '#ECEAE2',
+            catalogGray: '#ECEAE2',
+            paper: '#FDFCFA',
+            ink: '#26303D',
+            darkPanel: '#24323F',
+            line: '#D9DFDB',
+            brandYellow: '#EFE3C2',
+            brandBlue: '#4A7C6F',
+            brandBlueHover: '#3B655A',
+            sageMist: '#DCE8E3',
           },
           fontFamily: {
-            sans: ['Inter', 'Cairo', 'system-ui', 'sans-serif'],
+            sans: ['IBM Plex Sans Arabic', 'Inter', 'system-ui', 'sans-serif'],
             mono: ['JetBrains Mono', 'Fira Code', 'monospace'],
           }
         }
@@ -30,12 +34,12 @@
     };
   </script>
 
-  <!-- Google Fonts (Inter + Cairo for Arabic/English support) -->
+  <!-- Readable Arabic and English typography -->
   <link
-    href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
+    href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap"
     rel="stylesheet">
 
-  <!-- Rich Markdown + safe HTML sanitization + code syntax highlighting -->
+  <!-- Rich Markdown + HTML Sanitization + Syntax Highlighting -->
   <script defer src="https://cdn.jsdelivr.net/npm/marked@15.0.12/marked.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/dompurify@3.2.6/dist/purify.min.js"></script>
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
@@ -47,468 +51,343 @@
 
   <style>
     :root {
-      color-scheme: dark;
-      --surface: #0D1424;
-      --border: rgba(145, 164, 203, 0.12);
-      --accent: #8B7CF7;
-      --muted: #94a3b8;
-    }
+      /* Original requested color palette — single source of truth */
+      --bg-linen: #F6F5F0;
+      --bg-stone-soft: #ECEAE2;
+      --bg-paper: #FDFCFA;
+      --color-calm-sage: #4A7C6F;
+      --color-sage-hover: #3B655A;
+      --color-warm-sand: #EFE3C2;
+      --color-underline: #D8C79A;
+      --text-slate-ink: #26303D;
+      --border-slate: #475569;
+      --border-input: #64748B;
+      --shadow-default: #CBD5E1;
+      --shadow-hover: #B7CEC7;
+      --dark-auth-panel: #24323F;
+      --code-bg: #1E2530;
+      --code-header: #283140;
+      --cat-education-bg: #DCE8E3; --cat-education-text: #1E3A34;
+      --cat-coding-bg: #DCE4EE; --cat-coding-text: #1E293B;
+      --cat-business-bg: #EFE6D5; --cat-business-text: #3B3122;
+      --cat-writing-bg: #F2E2DC; --cat-writing-text: #43281E;
+      --cat-productivity-bg: #D8EAEB; --cat-productivity-text: #1B3B3E;
+      --cat-creative-bg: #E5E0F0; --cat-creative-text: #2E2447;
+      --cat-general-bg: #E6E4DD; --cat-general-text: #26303D;
 
-    html {
-      scroll-behavior: smooth;
+      /* Extra subtle utility hues are derived from the palette above */
+      --border-soft: #D9DFDB;
+      --text-muted: #556171;
+      --shadow-card: 0 5px 24px rgba(38, 48, 61, .055), 0 1px 3px rgba(38, 48, 61, .035);
+      --shadow-card-hover: 0 14px 34px rgba(58, 101, 90, .11), 0 4px 10px rgba(38, 48, 61, .045);
     }
-
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; background: var(--bg-linen); }
     body {
-      background:
-        radial-gradient(ellipse 850px 460px at 88% -100px, rgba(109, 74, 224, 0.18), transparent 72%),
-        radial-gradient(ellipse 750px 450px at -8% 20%, rgba(30, 82, 168, 0.12), transparent 70%),
-        #070B14;
-      color: #E2E8F0;
-      font-family: 'Inter', 'Cairo', sans-serif;
-      overflow-x: hidden;
+      margin: 0;
+      color: var(--text-slate-ink);
+      background: var(--bg-linen);
+      font-family: 'IBM Plex Sans Arabic', 'Inter', system-ui, sans-serif;
+      line-height: 1.72;
       min-height: 100dvh;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
     }
-
-    /* Lock outer document completely when inside Chat Workspace */
-    html.chat-locked,
-    html.chat-locked body {
-      height: 100dvh;
-      max-height: 100dvh;
-      overflow: hidden !important;
-      overscroll-behavior: none !important;
+    html[lang="en"] body { font-family: 'Inter', 'IBM Plex Sans Arabic', system-ui, sans-serif; line-height: 1.62; }
+    html[lang="ar"] body { font-family: 'IBM Plex Sans Arabic', 'Inter', system-ui, sans-serif; line-height: 1.76; }
+    html[lang="ar"] h1, html[lang="ar"] h2, html[lang="ar"] h3, html[lang="ar"] h4 { line-height: 1.48; }
+    html[lang="ar"] .font-extrabold, html[lang="ar"] .font-extrabold { font-weight: 700; }
+    ::selection { background: var(--color-warm-sand); color: var(--text-slate-ink); }
+    a, button { -webkit-tap-highlight-color: transparent; }
+    button, input, select, textarea { font: inherit; }
+    input, textarea, select { min-width: 0; }
+    [dir="auto"], [dir="ltr"], [dir="rtl"] { text-align: start; }
+    [dir="auto"] { unicode-bidi: plaintext; }
+    [dir="ltr"] { unicode-bidi: isolate; }
+    .text-center[dir] { text-align: center; }
+    button:focus-visible, a:focus-visible, [role="button"]:focus-visible {
+      outline: 3px solid var(--color-calm-sage);
+      outline-offset: 3px;
     }
-
-    /* Smooth native scrolling container for chat messages */
-    .chat-scroll-area {
-      overflow-y: auto;
-      -webkit-overflow-scrolling: touch;
-      overscroll-behavior-y: contain;
-      touch-action: pan-y;
-    }
-
-    .sidebar-scroll-area {
-      overflow-y: auto;
-      -webkit-overflow-scrolling: touch;
-      overscroll-behavior-y: contain;
-    }
-
-    /* Custom Scrollbar */
-    ::-webkit-scrollbar {
-      width: 6px;
-      height: 6px;
-    }
-    ::-webkit-scrollbar-track {
-      background: transparent;
-    }
-    ::-webkit-scrollbar-thumb {
-      background: rgba(51, 65, 85, 0.7);
-      border-radius: 9999px;
-    }
-    ::-webkit-scrollbar-thumb:hover {
-      background: rgba(99, 102, 241, 0.6);
-    }
-
-    .no-scrollbar::-webkit-scrollbar {
-      display: none;
-    }
-    .no-scrollbar {
-      -ms-overflow-style: none;
-      scrollbar-width: none;
-    }
-
-    * {
-      scrollbar-color: #334155 transparent;
-    }
-
-    button, input, select, textarea {
-      font: inherit;
-    }
-    button {
-      -webkit-tap-highlight-color: transparent;
-    }
-    button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible {
-      outline: 2px solid #a5b4fc;
+    input:focus-visible, textarea:focus-visible, select:focus-visible {
+      outline: 2px solid var(--color-calm-sage);
       outline-offset: 2px;
     }
+    html.chat-locked, html.chat-locked body {
+      height: 100dvh; max-height: 100dvh;
+      overflow: hidden !important; overscroll-behavior: none !important;
+    }
+    .chat-scroll-area { overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain; touch-action: pan-y; }
+    .sidebar-scroll-area { overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain; }
+    ::-webkit-scrollbar { width: 7px; height: 7px; }
+    ::-webkit-scrollbar-track { background: var(--bg-linen); }
+    ::-webkit-scrollbar-thumb { background: #BDC8C3; border-radius: 999px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--color-calm-sage); }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-    /* Glass Panels & Surfaces */
-    .glass-panel {
-      background: rgba(9, 14, 26, 0.88);
-      border-color: rgba(130, 148, 186, 0.12);
-      box-shadow: 0 10px 35px rgba(0, 0, 0, 0.22);
-      backdrop-filter: blur(22px) saturate(150%);
-      -webkit-backdrop-filter: blur(22px) saturate(150%);
+    /* Calm, soft cards in place of hard Neo-Brutalist outlines */
+    .nb-box, .nb-box-lg, .nb-box-sm, .nb-card {
+      background: var(--bg-paper);
+      border: 1px solid var(--border-soft);
+      border-radius: 18px;
+      box-shadow: var(--shadow-card);
     }
-
-    .premium-hero {
-      isolation: isolate;
-      position: relative;
-      background: linear-gradient(125deg, #162140 0%, #11182E 52%, #181430 100%);
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 24px 70px rgba(0, 0, 0, 0.28);
+    .nb-box-sm { border-radius: 14px; box-shadow: 0 2px 11px rgba(38, 48, 61, .04); }
+    .nb-box-lg { border-radius: 22px; box-shadow: 0 14px 44px rgba(38, 48, 61, .08); }
+    .nb-card {
+      border-radius: 20px;
+      transition: transform .22s ease, box-shadow .22s ease, border-color .22s ease;
     }
-    .premium-hero::before {
-      content: "";
-      pointer-events: none;
-      position: absolute;
-      inset: 0;
-      z-index: -1;
-      background:
-        radial-gradient(circle at 78% 25%, rgba(139, 124, 247, 0.28), transparent 48%),
-        radial-gradient(circle at 15% 85%, rgba(56, 189, 248, 0.12), transparent 45%);
+    .nb-card:hover {
+      transform: translateY(-3px);
+      border-color: var(--shadow-hover);
+      box-shadow: var(--shadow-card-hover);
     }
-    .premium-hero::after {
-      content: "";
-      pointer-events: none;
-      position: absolute;
-      width: 340px;
-      height: 340px;
-      border-radius: 50%;
-      right: -120px;
-      top: -210px;
-      border: 64px solid rgba(255, 255, 255, 0.025);
+    .nb-card:active { transform: translateY(-1px); }
+    .nb-btn {
+      border: 1px solid var(--border-soft);
+      border-radius: 12px;
+      box-shadow: 0 2px 7px rgba(38, 48, 61, .06);
+      transition: transform .18s ease, box-shadow .18s ease, background-color .18s ease, border-color .18s ease;
     }
-
-    .hero-accent {
-      background: linear-gradient(95deg, #c4b5fd 0%, #818cf8 48%, #38bdf8 100%);
-      -webkit-background-clip: text;
-      background-clip: text;
-      color: transparent;
+    .nb-btn:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 17px rgba(58, 101, 90, .13);
     }
-
-    .workflow-panel {
-      background: linear-gradient(150deg, rgba(22, 32, 58, 0.92), rgba(12, 18, 34, 0.92));
-      border: 1px solid rgba(165, 180, 252, 0.18);
-      box-shadow: 0 20px 55px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.07);
+    .nb-btn:active:not(:disabled) { transform: translateY(0); box-shadow: none; }
+    .nb-btn:disabled { cursor: not-allowed; }
+    .nb-input {
+      background: var(--bg-paper);
+      color: var(--text-slate-ink);
+      border: 1px solid #B6C1C3;
+      border-radius: 12px;
+      transition: border-color .2s ease, box-shadow .2s ease, background .2s ease;
     }
-
-    .agent-card {
-      background: linear-gradient(160deg, rgba(21, 30, 52, 0.92), rgba(14, 21, 38, 0.96));
-      border: 1px solid rgba(139, 155, 195, 0.12);
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03), 0 6px 20px rgba(0, 0, 0, 0.14);
-      transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.22s ease, box-shadow 0.22s ease, background 0.22s ease;
+    .nb-input:focus {
+      outline: none;
+      border-color: var(--color-calm-sage);
+      box-shadow: 0 0 0 3px rgba(74, 124, 111, .14);
+      background: #FFFFFF;
     }
-    .agent-card:hover {
-      background: linear-gradient(160deg, rgba(29, 40, 68, 0.96), rgba(19, 28, 49, 0.98));
-      border-color: rgba(139, 124, 247, 0.5);
-      box-shadow: 0 18px 42px rgba(0, 0, 0, 0.28), 0 0 0 1px rgba(139, 124, 247, 0.12);
+    .nb-input::placeholder, textarea::placeholder { color: #78828A; opacity: 1; }
+    .yellow-underline { position: relative; display: inline-block; }
+    .yellow-underline::after {
+      content: ''; display: block; width: 75%; max-width: 210px;
+      height: 5px; background: var(--color-underline);
+      border-radius: 999px; margin: 10px auto 0;
     }
-
-    /* Chat Workspace */
-    .chat-shell {
-      background: #080D18;
+    html[dir="rtl"] .yellow-underline::after { margin-inline-start: 0; }
+    html[dir="ltr"] .yellow-underline::after { margin-inline-start: 0; }
+    .chat-grid-bg {
+      background-color: var(--bg-linen);
+      background-image: radial-gradient(rgba(74, 124, 111, .055) .8px, transparent .8px);
+      background-size: 26px 26px;
     }
-    .chat-aside {
-      background: linear-gradient(180deg, #0F172A, #0B111E);
-    }
-    .chat-message-assistant {
-      background: linear-gradient(150deg, rgba(23, 33, 54, 0.95), rgba(17, 25, 42, 0.97));
-      border: 1px solid rgba(136, 155, 194, 0.14);
-      box-shadow: 0 8px 26px rgba(0, 0, 0, 0.14);
-    }
-    .chat-message-user {
-      background: linear-gradient(135deg, #6366F1, #4F46E5);
-      box-shadow: 0 8px 24px rgba(79, 70, 229, 0.22);
-    }
-    .chat-composer {
-      background: linear-gradient(135deg, #141E33, #111A2D);
-      border: 1px solid rgba(142, 155, 188, 0.22);
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.22);
-    }
-    .chat-composer:focus-within {
-      border-color: rgba(139, 124, 247, 0.75);
-      box-shadow: 0 0 0 3px rgba(139, 124, 247, 0.14), 0 10px 30px rgba(0, 0, 0, 0.25);
+    @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .animate-pop { animation: slideUp .23s ease-out forwards; }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      .animate-pop { animation: none; }
+      .nb-card, .nb-btn { transition-duration: 0ms; }
     }
 
-    .modal-shell {
-      background: linear-gradient(160deg, #162038, #0F172A);
-      border: 1px solid rgba(165, 180, 214, 0.18);
-      box-shadow: 0 32px 90px rgba(0, 0, 0, 0.65);
-    }
-
-    /* Profile Page */
-    .profile-shell {
-      background: linear-gradient(155deg, rgba(19, 28, 49, 0.96), rgba(12, 19, 34, 0.98));
-      border: 1px solid rgba(147, 165, 205, 0.15);
-      box-shadow: 0 26px 72px rgba(0, 0, 0, 0.24);
-    }
-    .profile-cover {
-      position: relative;
-      isolation: isolate;
-      background:
-        radial-gradient(circle at 76% -40%, rgba(167, 139, 250, 0.4), transparent 52%),
-        radial-gradient(circle at 5% 105%, rgba(56, 189, 248, 0.28), transparent 48%),
-        linear-gradient(120deg, #1E2559 0%, #241E4B 54%, #111933 100%);
-    }
-    .profile-cover::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background-image:
-        linear-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
-      background-size: 32px 32px;
-      mask-image: linear-gradient(to right, transparent 15%, black);
-      opacity: 0.35;
-      pointer-events: none;
-    }
-    .profile-avatar {
-      width: 100px;
-      height: 100px;
-      border: 5px solid #131C31;
-      border-radius: 26px;
-      background: linear-gradient(135deg, #6366F1, #3B82F6);
-      box-shadow: 0 16px 40px rgba(3, 7, 22, 0.4);
-      overflow: hidden;
-    }
-    .profile-stat {
-      background: linear-gradient(145deg, rgba(28, 39, 66, 0.65), rgba(15, 23, 42, 0.6));
-      border: 1px solid rgba(150, 166, 206, 0.13);
-    }
-    .profile-info-card {
-      background: linear-gradient(155deg, rgba(20, 30, 50, 0.95), rgba(13, 21, 36, 0.98));
-      border: 1px solid rgba(145, 163, 198, 0.14);
-    }
-    .profile-nav-active {
-      background: rgba(139, 124, 247, 0.16);
-      color: #c4b5fd;
-    }
-
-    /* Animations */
-    @keyframes toastSlideIn {
-      from {
-        opacity: 0;
-        transform: translateY(14px) scale(0.97);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-      }
-    }
-    .toast-enter {
-      animation: toastSlideIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-    }
-
-    @keyframes modalFadeIn {
-      from {
-        opacity: 0;
-        transform: scale(0.96) translateY(8px);
-      }
-      to {
-        opacity: 1;
-        transform: scale(1) translateY(0);
-      }
-    }
-    .modal-enter {
-      animation: modalFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-    }
-
-    /* Formatted Markdown & Code */
-    .chat-rich { min-width: 0; line-height: 1.78; overflow-wrap: anywhere; }
+    /* Mixed RTL/LTR prose, tables, and code */
+    .chat-rich { min-width: 0; color: var(--text-slate-ink); line-height: 1.82; overflow-wrap: anywhere; text-align: start; }
+    html[lang="en"] .chat-rich { line-height: 1.7; }
     .chat-rich > :first-child { margin-top: 0; }
     .chat-rich > :last-child { margin-bottom: 0; }
-    .chat-rich p { margin: 0.35em 0 0.9em; }
+    .chat-rich p { margin: .3em 0 .86em; }
     .chat-rich h1, .chat-rich h2, .chat-rich h3, .chat-rich h4 {
-      color: #f1f5ff; letter-spacing: -0.02em; font-weight: 700; line-height: 1.45;
-      margin: 1.15em 0 0.45em;
+      color: var(--text-slate-ink); font-weight: 700; line-height: 1.5; margin: 1.1em 0 .45em;
     }
-    .chat-rich h1 { font-size: 1.35rem; }
-    .chat-rich h2 { font-size: 1.18rem; }
+    .chat-rich h1 { font-size: 1.32rem; }
+    .chat-rich h2 { font-size: 1.17rem; border-bottom: 2px solid var(--color-underline); padding-bottom: 4px; display: inline-block; }
     .chat-rich h3 { font-size: 1.05rem; }
-    .chat-rich h4 { font-size: 0.98rem; }
-    .chat-rich strong { color: #f8fafc; font-weight: 700; }
-    .chat-rich em { color: #c7d2fe; }
-    .chat-rich ul, .chat-rich ol { padding-inline-start: 1.45rem; margin: 0.5em 0 1em; }
+    .chat-rich strong { font-weight: 700; color: var(--text-slate-ink); }
+    .chat-rich ul, .chat-rich ol { padding-inline-start: 1.5rem; margin: .5em 0 1em; }
     .chat-rich ul { list-style-type: disc; }
     .chat-rich ol { list-style-type: decimal; }
-    .chat-rich li { padding-inline-start: 0.15rem; margin: 0.25em 0; }
-    .chat-rich li::marker { color: #818cf8; }
-    .chat-rich a { color: #93c5fd; text-decoration: underline; text-underline-offset: 3px; }
-    .chat-rich a:hover { color: #dbeafe; }
+    .chat-rich li { margin: .25em 0; }
+    .chat-rich li::marker { color: var(--color-calm-sage); font-weight: 700; }
+    .chat-rich a { color: var(--color-sage-hover); font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
     .chat-rich blockquote {
-      margin: 1em 0; padding: 0.6rem 1rem;
-      border-inline-start: 3px solid #8B7CF7;
-      border-radius: 0 0.5rem 0.5rem 0;
-      background: rgba(139, 124, 247, 0.08); color: #cbd5e1;
+      margin: 1em 0; padding: .65rem 1rem;
+      border-inline-start: 3px solid var(--color-calm-sage);
+      border-radius: 8px; background: #F0F3EB;
+      color: var(--text-slate-ink); font-weight: 500;
     }
-    .chat-rich hr { margin: 1.15rem 0; border: 0; height: 1px; background: rgba(148, 163, 184, 0.2); }
+    .chat-rich hr { margin: 1.1rem 0; border: 0; height: 1px; background: var(--border-soft); }
     .chat-rich :not(pre) > code {
       font-family: 'JetBrains Mono', monospace;
-      font-size: 0.83em; direction: ltr; unicode-bidi: isolate;
-      color: #d8b4fe; background: rgba(139, 92, 246, 0.16);
-      border: 1px solid rgba(167, 139, 250, 0.18); border-radius: 0.375rem;
-      padding: 0.14rem 0.38rem; overflow-wrap: anywhere;
+      font-size: .87em; direction: ltr; unicode-bidi: isolate;
+      color: #324940; background: #E8EFE9; border: 1px solid #CEDCD2;
+      border-radius: 5px; padding: .12rem .34rem; font-weight: 500;
     }
-    .chat-rich .table-scroll { overflow-x: auto; max-width: 100%; margin: 0.9em 0; border-radius: 0.6rem; }
-    .chat-rich table { width: 100%; border-collapse: collapse; font-size: 0.88em; }
-    .chat-rich th, .chat-rich td { border: 1px solid rgba(135, 155, 190, 0.2); padding: 0.55rem 0.75rem; text-align: start; }
-    .chat-rich th { background: rgba(139, 124, 247, 0.14); color: #e2e8f0; }
-    .chat-rich tr:nth-child(even) { background: rgba(255, 255, 255, 0.025); }
-    .chat-message-user .chat-rich strong, .chat-message-user .chat-rich h1,
-    .chat-message-user .chat-rich h2, .chat-message-user .chat-rich h3 { color: white; }
-    .chat-message-user .chat-rich :not(pre) > code { color: white; background: rgba(255, 255, 255, 0.18); border-color: rgba(255,255,255,0.2); }
-
+    .chat-rich .table-scroll { overflow-x: auto; max-width: 100%; margin: .95em 0; border: 1px solid var(--border-soft); border-radius: 12px; }
+    .chat-rich table { width: 100%; border-collapse: collapse; font-size: .9em; background: var(--bg-paper); }
+    .chat-rich th, .chat-rich td { border: 1px solid var(--border-soft); padding: .6rem .8rem; text-align: start; }
+    .chat-rich th { background: var(--color-warm-sand); color: var(--text-slate-ink); font-weight: 700; }
+    .chat-rich tr:nth-child(even) { background: var(--bg-linen); }
+    .user-bubble .chat-rich, .user-bubble .chat-rich p, .user-bubble .chat-rich strong,
+    .user-bubble .chat-rich h1, .user-bubble .chat-rich h2, .user-bubble .chat-rich h3,
+    .user-bubble .chat-rich h4 { color: #FFFFFF; }
+    .user-bubble .chat-rich a { color: #F7EACD; }
+    .user-bubble .chat-rich :not(pre) > code { color: #FFFFFF; background: rgba(255, 255, 255, .17); border-color: rgba(255, 255, 255, .34); }
+    .user-bubble .chat-rich li::marker { color: #E6EBD8; }
     .code-window {
-      overflow: hidden; max-width: 100%; margin: 0.95rem 0;
-      background: #090E1A; border: 1px solid #26334D;
-      border-radius: 0.85rem;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22);
+      overflow: hidden; max-width: 100%; margin: 1rem 0;
+      background: var(--code-bg); border: 1px solid #3D4A56;
+      border-radius: 15px; box-shadow: 0 7px 22px rgba(30, 37, 48, .15);
     }
-    .code-titlebar {
-      background: linear-gradient(90deg, #131C31, #17223B);
-      border-bottom: 1px solid rgba(128, 147, 178, 0.16);
-    }
+    .code-titlebar { background: var(--code-header); border-bottom: 1px solid #3D4A56; }
     .code-window pre {
-      margin: 0; padding: 1rem 1.15rem;
-      overflow-x: auto; overflow-y: auto; max-height: 520px;
+      margin: 0; padding: 1rem 1.15rem; overflow: auto; max-height: 500px;
       tab-size: 2; white-space: pre; word-break: normal;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 12.5px; line-height: 1.8;
+      direction: ltr; text-align: left; unicode-bidi: isolate;
+      font-family: 'JetBrains Mono', monospace; font-size: 12.5px; line-height: 1.78; color: #F8FAFC;
     }
-    .code-window code.hljs { display: block; background: transparent; padding: 0; color: #dce4f7; }
-    .hljs { color: #dce4f7; }
-    .hljs-keyword, .hljs-selector-tag, .hljs-literal, .hljs-type { color: #c4a7ff; }
-    .hljs-title, .hljs-title.function_, .hljs-title.class_, .hljs-section { color: #82b6ff; }
-    .hljs-string, .hljs-attr, .hljs-attribute, .hljs-template-variable { color: #a9dfb1; }
-    .hljs-number, .hljs-symbol, .hljs-bullet { color: #f4be91; }
-    .hljs-comment, .hljs-quote { color: #7486a3; font-style: italic; }
-    .hljs-built_in, .hljs-variable.language_, .hljs-meta { color: #88d4e6; }
-    .hljs-params, .hljs-variable, .hljs-property { color: #dce4f7; }
-    .hljs-name, .hljs-tag, .hljs-selector-class, .hljs-selector-id { color: #f3a5c7; }
-    .hljs-addition { color: #a8e7bd; background: rgba(29, 145, 95, 0.10); }
-    .hljs-deletion { color: #fca5a5; background: rgba(190, 38, 38, 0.12); }
+    .code-window code.hljs { display: block; background: transparent; padding: 0; color: #F8FAFC; }
+    .hljs-keyword, .hljs-selector-tag, .hljs-literal, .hljs-type { color: #DECA9D; }
+    .hljs-title, .hljs-title.function_, .hljs-title.class_, .hljs-section { color: #A5C6EA; }
+    .hljs-string, .hljs-attr, .hljs-attribute, .hljs-template-variable { color: #A7D5B4; }
+    .hljs-number, .hljs-symbol, .hljs-bullet { color: #E4B68F; }
+    .hljs-comment, .hljs-quote { color: #9EADBA; font-style: italic; }
+    .hljs-built_in, .hljs-variable.language_, .hljs-meta { color: #9BDBE1; }
 
-    /* Mobile Specific Adjustments */
+    /* Navigation and accessible form refinements */
+    .catalog-search-icon { inset-inline-start: 14px; inset-inline-end: auto; }
+    .catalog-search-clear { inset-inline-end: 10px; inset-inline-start: auto; }
+    .catalog-search-field { padding-inline-start: 42px; padding-inline-end: 34px; }
+    .chat-composer-wrap { box-shadow: 0 -4px 16px rgba(38, 48, 61, .03); }
+    .chat-message-bubble { border-radius: 18px; box-shadow: 0 3px 14px rgba(38, 48, 61, .055); }
+    .user-bubble.chat-message-bubble { border-start-end-radius: 6px; }
+    .chat-message-bubble:not(.user-bubble) { border-start-start-radius: 6px; }
+    .agent-card-banner { border-radius: 19px 19px 0 0; }
+    .brand-logo-mark { filter: drop-shadow(0 2px 4px rgba(74, 124, 111, .08)); }
+    .soft-badge { border-radius: 999px; }
+    .glass-backdrop { backdrop-filter: blur(4px); }
+    .category-active { box-shadow: inset 0 0 0 1px var(--color-underline); }
     @media (max-width: 639px) {
-      #root { min-width: 0; }
-      .profile-avatar { width: 84px; height: 84px; border-radius: 22px; }
-      .premium-hero::after { display: none; }
-      .code-window { border-radius: 0.7rem; }
-      .code-window pre { font-size: 11.5px; padding: 0.85rem; }
-      .chat-composer-wrap { padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px)); }
-      input, textarea, select {
-        font-size: 16px !important; /* Prevents iOS Safari auto-zoom on focus */
-      }
-      .mobile-toast {
-        bottom: calc(4.75rem + env(safe-area-inset-bottom, 0px));
-        left: 1rem;
-        right: 1rem;
-      }
-      html.chat-locked .mobile-toast {
-        bottom: 5.25rem;
-      }
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-      *, *::before, *::after {
-        scroll-behavior: auto !important;
-        animation-duration: 0.01ms !important;
-        transition-duration: 0.01ms !important;
-      }
+      .code-window pre { font-size: 11.5px; padding: .88rem; }
+      .chat-composer-wrap { padding-bottom: calc(.75rem + env(safe-area-inset-bottom, 0px)); }
+      input, textarea, select { font-size: 16px !important; }
+      .mobile-toast { bottom: calc(4.75rem + env(safe-area-inset-bottom, 0px)); left: 1rem; right: 1rem; }
+      html.chat-locked .mobile-toast { bottom: 5.25rem; }
+      .nb-box, .nb-card { border-radius: 16px; }
     }
   </style>
 </head>
 
-<body class="antialiased selection:bg-indigo-500/30 selection:text-indigo-200">
+<body class="antialiased selection:bg-brandYellow selection:text-ink">
   <div id="root"></div>
 
   <script type="text/babel">
     const { useState, useEffect, useRef } = React;
 
     // Backend URL Configuration
-    const API_BASE = "https://agents-377s.onrender.com";
+    const API_BASE = "http://localhost:3000";
 
     const CATEGORIES = [
-      "All",
-      "General",
-      "Coding",
-      "Writing",
-      "Business",
-      "Education",
-      "Productivity",
-      "Creative"
+      { id: "All", ar: "الكل", en: "All" },
+      { id: "Education", ar: "التعليم", en: "Education" },
+      { id: "Coding", ar: "البرمجة", en: "Coding" },
+      { id: "Business", ar: "الأعمال", en: "Business" },
+      { id: "Writing", ar: "الكتابة", en: "Writing" },
+      { id: "Productivity", ar: "الإنتاجية", en: "Productivity" },
+      { id: "Creative", ar: "الإبداع", en: "Creative" },
+      { id: "General", ar: "عام", en: "General" },
     ];
 
-    const CATEGORY_STYLES = {
-      General: "bg-indigo-500/15 text-indigo-300 border-indigo-400/20",
-      Coding: "bg-emerald-500/15 text-emerald-300 border-emerald-400/20",
-      Writing: "bg-amber-500/15 text-amber-300 border-amber-400/20",
-      Business: "bg-sky-500/15 text-sky-300 border-sky-400/20",
-      Education: "bg-violet-500/15 text-violet-300 border-violet-400/20",
-      Productivity: "bg-cyan-500/15 text-cyan-300 border-cyan-400/20",
-      Creative: "bg-fuchsia-500/15 text-fuchsia-300 border-fuchsia-400/20",
+    // Top Card Banner Themes matching image_1e78e1.jpg (Red, Blue, Black, Emerald, Amber)
+    const CARD_THEMES = {
+      Education:    { bg: "var(--cat-education-bg)", text: "var(--cat-education-text)", badgeBg: "var(--bg-paper)", badgeText: "var(--cat-education-text)" },
+      Coding:       { bg: "var(--cat-coding-bg)", text: "var(--cat-coding-text)", badgeBg: "var(--bg-paper)", badgeText: "var(--cat-coding-text)" },
+      Business:     { bg: "var(--cat-business-bg)", text: "var(--cat-business-text)", badgeBg: "var(--bg-paper)", badgeText: "var(--cat-business-text)" },
+      Writing:      { bg: "var(--cat-writing-bg)", text: "var(--cat-writing-text)", badgeBg: "var(--bg-paper)", badgeText: "var(--cat-writing-text)" },
+      Productivity: { bg: "var(--cat-productivity-bg)", text: "var(--cat-productivity-text)", badgeBg: "var(--bg-paper)", badgeText: "var(--cat-productivity-text)" },
+      Creative:     { bg: "var(--cat-creative-bg)", text: "var(--cat-creative-text)", badgeBg: "var(--bg-paper)", badgeText: "var(--cat-creative-text)" },
+      General:      { bg: "var(--cat-general-bg)", text: "var(--cat-general-text)", badgeBg: "var(--bg-paper)", badgeText: "var(--cat-general-text)" },
     };
 
+    const FAQ_ITEMS = [
+      {
+        q_ar: "محتاج خبرة في هندسة الأوامر (Prompt Engineering) عشان أبدأ؟",
+        a_ar: "لأ. اكتب فكرتك بالعربي أو الإنجليزي بأسلوبك البسيط، ومهندس الأوامر الذكي (Prompt Architect) هيحولها تلقائياً لهيكل XML احترافي دقيق يشتغل بأعلى كفاءة.",
+        q_en: "Do I need prompt engineering experience to start?",
+        a_en: "No. Just write your idea in simple Arabic or English, and our AI Prompt Architect automatically transforms it into a deterministic Hybrid XML system prompt."
+      },
+      {
+        q_ar: "هل الوكيل التعليمي بيتذكر مستواي لو فتحت محادثة جديدة؟",
+        a_ar: "أيوه! المنصة مزودة بنظام ذاكرة تراكمية مستمرة (Cross-Session Memory) يحفظ مستواك والدروس اللي خلصتها ونقطة التوقف، عشان تكمل من مكان ما وقفت حتى لو فتحت شات جديد.",
+        q_en: "Does the tutor agent remember my progress if I open a new chat?",
+        a_en: "Yes! AgentTube includes persistent cross-session memory that tracks your skill level, completed lessons, and exact resume point across separate chat threads."
+      },
+      {
+        q_ar: "هل يمكنني مشاركة الوكلاء الذين أنشأتهم؟",
+        a_ar: "نعم، يمكنك إنشاء وكلائك ومشاركتهم ليستفيد منهم الآخرون داخل المنصة.",
+        q_en: "Can I share agents that I create?",
+        a_en: "Yes. You can create your agents and share them with other people on the platform."
+      },
+      {
+        q_ar: "هل المنصة مجانية لإنشاء ومشاركة الوكلاء؟",
+        a_ar: "نعم بالكامل! تقدر تنشئ حساب مجاني، تبني عدد غير محدود من الوكلاء، وتشاركهم مع المجتمع العربي أو تستخدم وكلاء المبدعين الآخرين.",
+        q_en: "Is the platform free to create and share agents?",
+        a_en: "Yes, completely free! Create an account, build unlimited AI agents, and share them with the community."
+      }
+    ];
+
     // ==========================================
-    // SVG Icons Component
+    // Custom Neo-Brutalist Logo & Icons
     // ==========================================
+    const BrandLogo = () => (
+      <div className="flex items-center gap-2.5 select-none">
+        {/* Stylized Hatched Geometric Emblem matching image_1e78e0.png */}
+        <svg className="brand-logo-mark w-9 h-9 flex-shrink-0" viewBox="0 0 40 40" fill="none">
+          <path d="M4 6H14L20 18L26 6H36L24 26V35H16V26L4 6Z" fill="#EFE3C2" stroke="#475569" strokeWidth="2.5" strokeLinejoin="round"/>
+          <path d="M9 10L17 24M23 10L31 10M18 28H22" stroke="#26303D" strokeWidth="2" strokeLinecap="round"/>
+        </svg>
+        <div className="flex flex-col leading-none">
+          <span className="text-xl font-extrabold tracking-tight text-ink">AgentTube</span>
+          <span className="text-[10px] font-bold text-neutral-600 tracking-wide mt-0.5">AI STUDIO</span>
+        </div>
+      </div>
+    );
+
     const Icon = ({ name, className = "w-5 h-5" }) => {
       const icons = {
-        sparkles: (
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-        ),
-        search: (
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-        ),
-        globe: (
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
-        ),
-        plus: (
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
-        ),
-        chat: (
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-        ),
-        send: (
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-        ),
-        trash: (
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-        ),
+        sparkles: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />,
+        search: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />,
+        globe: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />,
+        plus: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 5v14m7-7H5" />,
+        chat: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />,
+        send: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />,
+        trash: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />,
         eye: (
           <React.Fragment>
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
           </React.Fragment>
         ),
-        back: (
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-        ),
-        logout: (
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-        ),
-        close: (
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-        ),
-        user: (
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-        ),
-        compass: (
-          <React.Fragment>
-            <circle cx="12" cy="12" r="9" strokeWidth="1.8" />
-            <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76" strokeWidth="1.8" strokeLinejoin="round" />
-          </React.Fragment>
-        ),
-        calendar: (
-          <React.Fragment><rect x="3" y="5" width="18" height="16" rx="2" strokeWidth="1.8" /><path strokeLinecap="round" strokeWidth="1.8" d="M7 3v4m10-4v4M3 10h18" /></React.Fragment>
-        ),
-        mail: (
-          <React.Fragment><rect x="3" y="5" width="18" height="14" rx="2" strokeWidth="1.8" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="m3 7 9 6 9-6" /></React.Fragment>
-        ),
-        grid: (
-          <React.Fragment><rect x="3" y="3" width="7" height="7" rx="1.5" strokeWidth="1.8"/><rect x="14" y="3" width="7" height="7" rx="1.5" strokeWidth="1.8"/><rect x="3" y="14" width="7" height="7" rx="1.5" strokeWidth="1.8"/><rect x="14" y="14" width="7" height="7" rx="1.5" strokeWidth="1.8"/></React.Fragment>
-        ),
+        back: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" d="M14 5l7 7m0 0l-7 7m7-7H3" />,
+        logout: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />,
+        close: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" />,
+        user: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />,
+        brain: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.98-3A2.5 2.5 0 0 1 9.5 2Z M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3A2.5 2.5 0 0 0 14.5 2Z" />,
         refresh: (
-          <React.Fragment><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M20 7v5h-5M4 17v-5h5"/><path strokeLinecap="round" strokeWidth="1.8" d="M5.7 9A7 7 0 0 1 18.5 7L20 12M4 12l1.5 5A7 7 0 0 0 18.3 15" /></React.Fragment>
+          <React.Fragment>
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 7v5h-5M4 17v-5h5"/>
+            <path strokeLinecap="round" strokeWidth="2" d="M5.7 9A7 7 0 0 1 18.5 7L20 12M4 12l1.5 5A7 7 0 0 0 18.3 15" />
+          </React.Fragment>
         ),
         copy: (
-          <React.Fragment><rect x="8" y="8" width="12" height="12" rx="2" strokeWidth="1.8" /><path strokeWidth="1.8" strokeLinecap="round" d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" /></React.Fragment>
+          <React.Fragment>
+            <rect x="8" y="8" width="12" height="12" strokeWidth="2" />
+            <path strokeWidth="2" strokeLinecap="round" d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" />
+          </React.Fragment>
         ),
-        check: (
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="m5 12 4 4L19 6" />
-        ),
-        arrow: (
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M5 12h14m-6-6 6 6-6 6" />
-        ),
+        check: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="m5 12 4 4L19 6" />,
+        arrowLeft: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" d="M19 12H5m6 6-6-6 6-6" />,
       };
 
       return (
@@ -518,8 +397,51 @@
       );
     };
 
+    // Custom Minimalist Black & Yellow Line Illustrations (Matching image_1e78f9.jpg)
+    const FeatureIllustration = ({ type }) => {
+      if (type === "architect") {
+        return (
+          <svg className="w-40 h-28 mx-auto" viewBox="0 0 180 120" fill="none">
+            <rect x="34" y="42" width="112" height="58" fill="#EFE3C2" />
+            <rect x="46" y="22" width="88" height="56" rx="2" fill="#FDFCFA" stroke="#26303D" strokeWidth="2.5" />
+            <rect x="54" y="30" width="72" height="40" fill="#26303D" />
+            <text x="64" y="54" fill="#EFE3C2" fontFamily="monospace" fontSize="14" fontWeight="bold">&lt;XML/&gt;</text>
+            <path d="M36 78H144L148 88H32L36 78Z" fill="#FDFCFA" stroke="#26303D" strokeWidth="2.5" strokeLinejoin="round" />
+            <circle cx="32" cy="54" r="12" fill="#FDFCFA" stroke="#26303D" strokeWidth="2.5" />
+            <circle cx="32" cy="54" r="4" fill="#EFE3C2" stroke="#475569" strokeWidth="2" />
+            <path d="M144 26L154 18M148 34L160 30M142 18L146 10" stroke="#26303D" strokeWidth="2" strokeLinecap="round" />
+          </svg>
+        );
+      }
+      if (type === "memory") {
+        return (
+          <svg className="w-40 h-28 mx-auto" viewBox="0 0 180 120" fill="none">
+            <rect x="38" y="45" width="105" height="50" fill="#EFE3C2" />
+            <path d="M42 36C60 32 78 38 90 46C102 38 120 32 138 36V86C120 82 102 88 90 96C78 88 60 82 42 86V36Z" fill="#FDFCFA" stroke="#26303D" strokeWidth="2.5" strokeLinejoin="round" />
+            <path d="M90 46V96" stroke="#26303D" strokeWidth="2.5" />
+            <path d="M54 50C64 48 74 51 80 55M54 62C64 60 74 63 80 67M100 55C106 51 116 48 126 50M100 67C106 63 116 60 126 62" stroke="#26303D" strokeWidth="2" strokeLinecap="round" />
+            <path d="M96 24L122 14L148 24L122 34L96 24Z" fill="#26303D" stroke="#26303D" strokeWidth="2" strokeLinejoin="round" />
+            <path d="M144 26V38" stroke="#26303D" strokeWidth="2" strokeLinecap="round" />
+          </svg>
+        );
+      }
+      return (
+        <svg className="w-40 h-28 mx-auto" viewBox="0 0 180 120" fill="none">
+          <rect x="34" y="44" width="96" height="54" fill="#EFE3C2" />
+          <rect x="44" y="28" width="84" height="58" rx="2" fill="#FDFCFA" stroke="#26303D" strokeWidth="2.5" />
+          <polygon points="80,46 80,68 98,57" fill="#26303D" />
+          <circle cx="136" cy="30" r="14" fill="#FDFCFA" stroke="#26303D" strokeWidth="2.5" />
+          <circle cx="131" cy="30" r="1.8" fill="#26303D" />
+          <circle cx="136" cy="30" r="1.8" fill="#26303D" />
+          <circle cx="141" cy="30" r="1.8" fill="#26303D" />
+          <rect x="134" y="54" width="14" height="24" rx="7" fill="#26303D" />
+          <path d="M128 66C128 74 134 80 141 80C148 80 154 74 154 66M141 80V90M133 90H149" stroke="#26303D" strokeWidth="2.5" strokeLinecap="round" />
+        </svg>
+      );
+    };
+
     // ==========================================
-    // Rich Markdown & Syntax-Highlighted Code
+    // Rich Markdown & Code Rendering
     // ==========================================
     const escapeHtml = (value) => String(value).replace(/[&<>"']/g, (char) => ({
       "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
@@ -532,7 +454,7 @@
       cs: "csharp", csharp: "csharp", cplusplus: "cpp", rb: "ruby"
     };
 
-    function CodeSnippet({ code, language = "" }) {
+    function CodeSnippet({ code, language = "", lang = "ar" }) {
       const [copied, setCopied] = useState(false);
       const resetRef = useRef(null);
       useEffect(() => () => clearTimeout(resetRef.current), []);
@@ -566,19 +488,21 @@
           <div className="code-titlebar flex items-center justify-between gap-3 px-3.5 py-2">
             <div className="flex items-center gap-2.5 min-w-0">
               <span className="flex gap-1.5" aria-hidden="true">
-                <span className="w-2.5 h-2.5 rounded-full bg-rose-400/80" />
-                <span className="w-2.5 h-2.5 rounded-full bg-amber-400/80" />
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-400/80" />
+                <span className="w-2.5 h-2.5 bg-rose-500 border border-black" />
+                <span className="w-2.5 h-2.5 bg-brandYellow border border-black" />
+                <span className="w-2.5 h-2.5 bg-emerald-400 border border-black" />
               </span>
-              <span className="font-mono text-[11px] text-indigo-200/90 truncate uppercase tracking-wider">
+              <span className="font-mono text-[11px] font-bold text-brandYellow truncate uppercase tracking-wider">
                 {language || detected || "code"}
               </span>
             </div>
-            <button type="button" onClick={copyCode}
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium text-slate-300 hover:text-white bg-white/5 hover:bg-white/10 transition-colors"
-              aria-label={copied ? "Code copied" : "Copy code"}>
-              <Icon name={copied ? "check" : "copy"} className="w-3.5 h-3.5 text-indigo-300" />
-              {copied ? "Copied" : "Copy"}
+            <button
+              type="button"
+              onClick={copyCode}
+              className="flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-bold text-ink bg-brandYellow hover:bg-yellow-300 border border-line transition-colors"
+            >
+              <Icon name={copied ? "check" : "copy"} className="w-3.5 h-3.5" />
+              {copied ? (lang === "ar" ? "تم النسخ" : "Copied") : (lang === "ar" ? "نسخ الكود" : "Copy code")}
             </button>
           </div>
           <pre><code className="hljs" dangerouslySetInnerHTML={{ __html: highlighted }} /></pre>
@@ -602,18 +526,20 @@
       } else {
         html = "<p>" + escapeHtml(source).replace(/\n/g, "<br>") + "</p>";
       }
+      // Each block determines its own writing direction, not just the whole message.
+      html = html.replace(/<(p|li|h[1-6]|blockquote|th|td)(?=[\s>])/g, '<$1 dir="auto"');
       return <div className="chat-rich" dir="auto" dangerouslySetInnerHTML={{ __html: html }} />;
     }
 
-    const FormattedMessage = ({ text }) => {
+    const FormattedMessage = ({ text, uiLang = "ar" }) => {
       if (!text) return null;
       if (!text.includes("```") && /^\s*<(?:\?xml\b|[A-Za-z][\w:-]*[\s>])/.test(text)
         && /<\/[A-Za-z][\w:-]*>/.test(text)) {
-        return <CodeSnippet code="{text.trim()}" language="xml"/>;
+        return <CodeSnippet code={text.trim()} language="xml" lang={uiLang}/>;
       }
       const parts = text.split(/(```[\s\S]*?(?:```|$))/g).filter(Boolean);
       return (
-        <div className="min-w-0 text-[14px] sm:text-[15px] leading-relaxed" dir="auto">
+        <div className="min-w-0 text-[14.5px] sm:text-[15px] leading-relaxed" dir="auto">
           {parts.map((part, index) => {
             if (part.startsWith("```")) {
               const inner = part.slice(3).replace(/```$/, "");
@@ -623,7 +549,7 @@
               const lang = validLanguage ? header : "";
               const code = validLanguage && newline >= 0 ? inner.slice(newline + 1).replace(/\n$/, "")
                 : newline === -1 && validLanguage ? "" : inner.replace(/^\n/, "").replace(/\n$/, "");
-              return <CodeSnippet key={index} code={code} language={lang} />;
+              return <CodeSnippet key={index} code={code} language={lang} lang={uiLang} />;
             }
             return <MarkdownPart key={index} source={part} />;
           })}
@@ -631,7 +557,7 @@
       );
     };
 
-    function CopyMessageButton({ text }) {
+    function CopyMessageButton({ text, lang = "ar" }) {
       const [copied, setCopied] = useState(false);
       const handleCopy = async () => {
         try {
@@ -644,11 +570,10 @@
         <button
           type="button"
           onClick={handleCopy}
-          title="Copy message"
-          className="inline-flex items-center gap-1 text-[11px] text-slate-500 hover:text-indigo-300 transition-colors mt-1.5 px-1.5 py-0.5 rounded-md hover:bg-white/5"
+          className="inline-flex items-center gap-1.5 text-[11px] font-bold text-ink bg-paper hover:bg-brandYellow border border-line px-2 py-0.5 mt-1.5 shadow-sm transition-colors"
         >
-          <Icon name={copied ? "check" : "copy"} className="w-3.5 h-3.5" />
-          <span>{copied ? "Copied" : "Copy"}</span>
+          <Icon name={copied ? "check" : "copy"} className="w-3 h-3" />
+          <span>{copied ? (lang === "ar" ? "تم النسخ" : "Copied") : (lang === "ar" ? "نسخ الرد" : "Copy reply")}</span>
         </button>
       );
     }
@@ -675,6 +600,7 @@
     // Main Application Component
     // ==========================================
     function App() {
+      const [lang, setLang] = useState(() => localStorage.getItem("agenttube_lang") === "en" ? "en" : "ar"); // "ar" | "en"
       const [token, setToken] = useState(() => localStorage.getItem("agenttube_token") || "");
       const [user, setUser] = useState(null);
       const [showAuthModal, setShowAuthModal] = useState(false);
@@ -685,16 +611,22 @@
       const [toast, setToast] = useState(null);
       const [showMobileHistory, setShowMobileHistory] = useState(false);
 
+      // Explore & FAQ State
       const [agents, setAgents] = useState([]);
       const [loadingAgents, setLoadingAgents] = useState(true);
       const [selectedCategory, setSelectedCategory] = useState("All");
       const [searchQuery, setSearchQuery] = useState("");
+      const [openFaqIndex, setOpenFaqIndex] = useState(0);
 
+      // Profile State
       const [profileAgents, setProfileAgents] = useState([]);
       const [profileLoading, setProfileLoading] = useState(false);
       const [profileError, setProfileError] = useState("");
 
+      // Chat & Memory State
       const [activeAgent, setActiveAgent] = useState(null);
+      const [agentMemory, setAgentMemory] = useState("");
+      const [showMemoryModal, setShowMemoryModal] = useState(false);
       const [conversations, setConversations] = useState([]);
       const [activeConversationId, setActiveConversationId] = useState(null);
       const [messages, setMessages] = useState([]);
@@ -704,8 +636,19 @@
 
       const chatContainerRef = useRef(null);
       const textareaRef = useRef(null);
+      const catalogRef = useRef(null);
+      const howItWorksRef = useRef(null);
+      const faqRef = useRef(null);
 
-      // Lock document viewport completely when in chat mode so header & sidebar stay 100% static
+      // Sync HTML direction
+      useEffect(() => {
+        document.documentElement.dir = lang === "ar" ? "rtl" : "ltr";
+        document.documentElement.lang = lang;
+        document.title = lang === "ar" ? "AgentTube — منصة وكلاء الذكاء الاصطناعي" : "AgentTube — AI Agent Studio";
+        localStorage.setItem("agenttube_lang", lang);
+      }, [lang]);
+
+      // Lock document viewport completely when in chat mode
       useEffect(() => {
         const isChat = view === "chat";
         document.documentElement.classList.toggle("chat-locked", isChat);
@@ -743,7 +686,7 @@
         const res = await fetch(`${API_BASE}${endpoint}`, { ...options, headers });
         const data = await res.json();
         if (!res.ok || data.success === false) {
-          throw new Error(data.error || "Request failed");
+          throw new Error(data.error || "حدث خطأ في الطلب");
         }
         return data;
       };
@@ -793,7 +736,7 @@
             : (Array.isArray(res.data?.agents) ? res.data.agents : []);
           setProfileAgents(list.filter((agent) => isAgentOwnedBy(agent, account)));
         } catch (err) {
-          setProfileError(err.message || "Could not load your agents.");
+          setProfileError(err.message || (lang === "ar" ? "تعذر تحميل الوكلاء." : "Could not load agents."));
         } finally {
           setProfileLoading(false);
         }
@@ -809,6 +752,15 @@
         loadProfileAgents(user);
       };
 
+      const scrollToSection = (ref) => {
+        if (view !== "explore") {
+          setView("explore");
+          setTimeout(() => ref.current?.scrollIntoView({ behavior: "smooth" }), 100);
+        } else {
+          ref.current?.scrollIntoView({ behavior: "smooth" });
+        }
+      };
+
       // 3. Smooth non-blocking auto-scroll for chat messages
       const scrollToBottom = (smooth = true) => {
         const el = chatContainerRef.current;
@@ -822,7 +774,6 @@
       useEffect(() => {
         const el = chatContainerRef.current;
         if (!el) return;
-        // During active streaming, only follow bottom if user hasn't scrolled up
         if (sendingMessage) {
           const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
           if (distanceFromBottom < 180) {
@@ -832,6 +783,32 @@
           scrollToBottom(true);
         }
       }, [messages, sendingMessage]);
+
+      // Fetch Agent Memory
+      const fetchAgentMemory = async (slug) => {
+        if (!token) {
+          setAgentMemory("");
+          return;
+        }
+        try {
+          const memRes = await apiFetch(`/api/agents/${slug}/memory`);
+          setAgentMemory(memRes.data?.summary || "");
+        } catch {
+          setAgentMemory("");
+        }
+      };
+
+      const handleClearAgentMemory = async () => {
+        if (!activeAgent || !token) return;
+        try {
+          await apiFetch(`/api/agents/${activeAgent.slug}/memory`, { method: "DELETE" });
+          setAgentMemory("");
+          setShowMemoryModal(false);
+          notify(lang === "ar" ? "تم تصفير ذاكرة التقدم بنجاح" : "Progress memory cleared", "success");
+        } catch (err) {
+          notify(err.message, "error");
+        }
+      };
 
       // Open Agent Chat Workspace
       const openAgentWorkspace = async (slug) => {
@@ -845,10 +822,14 @@
           setView("chat");
 
           if (token) {
-            const convRes = await apiFetch(`/api/conversations?agentId=${agentData._id}`);
+            const [convRes] = await Promise.all([
+              apiFetch(`/api/conversations?agentId=${agentData._id}`),
+              fetchAgentMemory(slug),
+            ]);
             setConversations(convRes.data || []);
           } else {
             setConversations([]);
+            setAgentMemory("");
           }
         } catch (err) {
           notify(err.message, "error");
@@ -881,7 +862,7 @@
             setActiveConversationId(null);
             setMessages([]);
           }
-          notify("Conversation deleted", "success");
+          notify(lang === "ar" ? "تم حذف المحادثة" : "Conversation deleted", "success");
         } catch (err) {
           notify(err.message, "error");
         }
@@ -893,7 +874,8 @@
         if (!textToSend || sendingMessage || !activeAgent) return;
 
         if (!token) {
-          notify("Please sign in to chat with agents", "error");
+          notify(lang === "ar" ? "سجّل الدخول أولاً لبدء المحادثة" : "Please sign in to start chatting", "error");
+          setAuthMode("login");
           setShowAuthModal(true);
           return;
         }
@@ -927,7 +909,7 @@
 
           if (!response.ok) {
             const errData = await response.json().catch(() => ({}));
-            throw new Error(errData.error || "Failed to send message");
+            throw new Error(errData.error || "فشل إرسال الرسالة");
           }
 
           const reader = response.body.getReader();
@@ -983,6 +965,9 @@
                     ...prev,
                   ]);
                 }
+
+                // Refresh memory badge in background after turn finishes
+                setTimeout(() => fetchAgentMemory(activeAgent.slug), 1800);
               }
             }
           }
@@ -1005,14 +990,15 @@
         setProfileAgents([]);
         setProfileError("");
         if (view === "profile") setView("explore");
-        notify("Signed out successfully");
+        notify(lang === "ar" ? "تم تسجيل الخروج بنجاح" : "Signed out successfully");
       };
 
       const isChatView = view === "chat";
+      const totalViewsAll = agents.reduce((acc, a) => acc + (Number(a.viewsCount) || 0), 0);
 
       return (
         <div
-          className={`flex flex-col bg-bgMain text-slate-200 ${
+          className={`flex flex-col bg-cream text-ink ${
             isChatView
               ? "h-[100dvh] max-h-[100dvh] overflow-hidden"
               : "min-h-[100dvh] pb-16 sm:pb-0"
@@ -1020,117 +1006,98 @@
         >
           {/* Toast Notification */}
           {toast && (
-            <div className="mobile-toast toast-enter fixed bottom-5 right-5 z-50 flex items-center gap-3 px-4 py-3 rounded-2xl shadow-2xl border bg-bgElevated/95 backdrop-blur-md border-slate-700/80 text-sm font-medium">
-              <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${toast.type === "error" ? "bg-rose-500 shadow-[0_0_10px_#f43f5e]" : "bg-emerald-400 shadow-[0_0_10px_#34d399]"}`}></span>
-              <span className="text-slate-100">{toast.msg}</span>
+            <div className="mobile-toast animate-pop fixed bottom-5 left-5 z-50 flex items-center gap-3 px-4 py-3 nb-box text-sm font-bold">
+              <span className={`w-3 h-3 border border-line flex-shrink-0 ${toast.type === "error" ? "bg-rose-500" : "bg-brandYellow"}`}></span>
+              <span>{toast.msg}</span>
             </div>
           )}
 
-          {/* Top Navigation Bar (Static & Non-Scrolling) */}
-          <header className="sticky top-0 z-30 flex-shrink-0 glass-panel border-b border-slate-800/80">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 min-h-14 sm:h-16 flex flex-wrap sm:flex-nowrap items-center justify-between gap-x-3 gap-y-2 py-2 sm:py-0">
-              {/* Brand Logo */}
-              <div
-                onClick={() => setView("explore")}
-                className="flex items-center gap-3 cursor-pointer group flex-shrink-0"
-              >
-                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-indigo-500 via-violet-600 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/25 group-hover:scale-105 transition-transform">
-                  <Icon name="sparkles" className="w-5 h-5 text-white" />
-                </div>
-                <div className="flex items-center">
-                  <span className="text-lg font-extrabold tracking-tight bg-gradient-to-r from-white via-slate-100 to-slate-400 bg-clip-text text-transparent">
-                    AgentTube
-                  </span>
-                  <span className="ml-2 text-[10px] sm:text-[11px] font-semibold px-2 py-0.5 rounded-full bg-indigo-500/15 text-indigo-300 border border-indigo-400/25">
-                    Studio
-                  </span>
-                </div>
+          {/* ========================================== */}
+          {/* TOP NAVBAR (Matching image_1e78e0.png)     */}
+          {/* ========================================== */}
+          <header className="sticky top-0 z-30 flex-shrink-0 bg-cream border-b-2 border-line">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
+              {/* Right Side: Logo + Navigation Links */}
+              <div className="flex items-center gap-6 lg:gap-8">
+                <button
+                  type="button"
+                  onClick={() => setView("explore")}
+                  className="text-start focus:outline-none"
+                >
+                  <BrandLogo />
+                </button>
+
+                <nav className="hidden md:flex items-center gap-6 text-sm font-bold" aria-label={lang === "ar" ? "التنقل الرئيسي" : "Main navigation"}>
+                  <button
+                    onClick={() => scrollToSection(catalogRef)}
+                    className={`transition-colors ${view === "explore" ? "text-brandBlue" : "text-ink hover:text-brandBlue"}`}
+                  >
+                    {lang === "ar" ? "استكشف الوكلاء" : "Explore Agents"}
+                  </button>
+                  <button
+                    onClick={() => scrollToSection(howItWorksRef)}
+                    className="text-ink hover:text-brandBlue transition-colors"
+                  >
+                    {lang === "ar" ? "كيف يعمل؟" : "How it Works"}
+                  </button>
+                  <button
+                    onClick={() => scrollToSection(faqRef)}
+                    className="text-ink hover:text-brandBlue transition-colors"
+                  >
+                    {lang === "ar" ? "الأسئلة الشائعة" : "FAQ"}
+                  </button>
+                  {user && (
+                    <button
+                      onClick={openProfile}
+                      className={`transition-colors ${view === "profile" ? "text-brandBlue underline decoration-2 underline-offset-4" : "text-ink hover:text-brandBlue"}`}
+                    >
+                      {lang === "ar" ? "حسابي" : "My Profile"}
+                    </button>
+                  )}
+                </nav>
               </div>
 
-              {/* Search Bar (Visible in Explore View) */}
-              {view === "explore" && (
-                <div className="order-3 basis-full min-w-0 sm:order-none sm:basis-auto sm:flex-1 max-w-none sm:max-w-md mx-0 sm:mx-4">
-                  <div className="relative group">
-                    <Icon name="search" className="w-4 h-4 text-slate-400 group-focus-within:text-indigo-400 transition-colors absolute left-3.5 top-1/2 -translate-y-1/2" />
-                    <input
-                      type="text"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="Search AI agents..."
-                      dir="auto"
-                      className="w-full pl-10 pr-8 py-2 rounded-xl bg-bgSurface/90 border border-slate-800 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500/70 focus:ring-2 focus:ring-indigo-500/20 transition-all"
-                    />
-                    {searchQuery && (
-                      <button
-                        type="button"
-                        onClick={() => setSearchQuery("")}
-                        aria-label="Clear search"
-                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 p-1"
-                      >
-                        <Icon name="close" className="w-3.5 h-3.5" />
-                      </button>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Desktop Main Navigation */}
-              <nav className="hidden md:flex items-center gap-1 rounded-xl p-1 bg-white/[0.03] border border-white/[0.06]" aria-label="Main navigation">
+              {/* Left Side: Language Switcher + Sign In / Create Agent */}
+              <div className="flex items-center gap-2 sm:gap-3">
                 <button
-                  onClick={() => setView("explore")}
-                  className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${view === "explore" ? "profile-nav-active shadow-sm" : "text-slate-400 hover:text-white hover:bg-white/5"}`}
+                  type="button"
+                  onClick={() => setLang(lang === "ar" ? "en" : "ar")}
+                  className="nb-btn px-2.5 sm:px-3 py-1.5 bg-paper text-xs font-extrabold text-ink flex items-center gap-1.5"
+                  title={lang === "ar" ? "Switch to English" : "التحويل إلى العربية"}
                 >
-                  Explore
+                  <span>{lang === "ar" ? "EN" : "عربي"}</span>
+                  <Icon name="globe" className="w-3.5 h-3.5" />
                 </button>
-                {user && (
-                  <button
-                    onClick={openProfile}
-                    className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${view === "profile" ? "profile-nav-active shadow-sm" : "text-slate-400 hover:text-white hover:bg-white/5"}`}
-                  >
-                    My Profile
-                  </button>
-                )}
-              </nav>
 
-              {/* Right Actions */}
-              <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
                 <button
+                  type="button"
                   onClick={() => {
                     if (!token) {
+                      setAuthMode("login");
                       setShowAuthModal(true);
                     } else {
                       setShowCreateModal(true);
                     }
                   }}
-                  className="hidden sm:flex items-center gap-2 px-3.5 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white text-sm font-semibold shadow-lg shadow-indigo-600/25 transition-all hover:-translate-y-0.5"
+                  className="hidden sm:flex items-center gap-1.5 px-3.5 py-1.5 bg-brandYellow text-ink text-xs sm:text-sm font-extrabold nb-btn"
                 >
                   <Icon name="plus" className="w-4 h-4" />
-                  <span>Create Agent</span>
+                  <span>{lang === "ar" ? "إنشاء وكيل" : "Create Agent"}</span>
                 </button>
 
                 {user ? (
-                  <div className="flex items-center gap-1.5 sm:gap-2 sm:pl-2 sm:border-l sm:border-slate-800">
+                  <div className="flex items-center gap-2">
                     <button
                       onClick={openProfile}
-                      title="Open my profile"
-                      aria-label="Open my profile"
-                      className={`flex items-center gap-2 rounded-xl p-1 sm:pr-2.5 transition-all hover:bg-slate-800/70 ${view === "profile" ? "bg-indigo-500/15 ring-1 ring-indigo-400/30" : ""}`}
+                      className="nb-btn flex items-center gap-2 bg-paper px-2.5 py-1 text-xs font-extrabold text-ink"
                     >
-                      {user.avatarUrl ? (
-                        <img src={user.avatarUrl} alt="" className="w-8 h-8 rounded-full bg-slate-800 border border-slate-700 object-cover" />
-                      ) : (
-                        <span className="w-8 h-8 rounded-full bg-indigo-500/20 border border-indigo-400/25 flex items-center justify-center font-bold text-indigo-200 text-sm">
-                          {(user.displayName || user.username || "U").charAt(0).toUpperCase()}
-                        </span>
-                      )}
-                      <span className="hidden lg:inline text-sm font-medium text-slate-300 max-w-28 truncate">
-                        {user.displayName || user.username || "Profile"}
-                      </span>
+                      <img src={user.avatarUrl} alt="" className="w-6 h-6 border border-line bg-cream" />
+                      <span className="hidden sm:inline max-w-[100px] truncate">{user.displayName || user.username}</span>
                     </button>
                     <button
                       onClick={handleLogout}
-                      title="Sign out"
-                      className="p-2 rounded-xl text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
+                      title={lang === "ar" ? "تسجيل الخروج" : "Sign out"}
+                      className="nb-btn p-1.5 bg-paper hover:bg-rose-100 text-ink"
                     >
                       <Icon name="logout" className="w-4 h-4" />
                     </button>
@@ -1141,9 +1108,9 @@
                       setAuthMode("login");
                       setShowAuthModal(true);
                     }}
-                    className="px-3.5 sm:px-4 py-2 rounded-xl bg-bgElevated hover:bg-slate-700/80 text-slate-200 text-xs sm:text-sm font-semibold border border-slate-700/80 transition-colors"
+                    className="nb-btn px-3.5 sm:px-4 py-1.5 bg-paper text-ink text-xs sm:text-sm font-extrabold"
                   >
-                    Sign In
+                    {lang === "ar" ? "تسجيل الدخول" : "Sign In"}
                   </button>
                 )}
               </div>
@@ -1151,210 +1118,384 @@
           </header>
 
           {/* ========================================== */}
-          {/* VIEW 1: EXPLORE AGENTS                     */}
+          {/* VIEW 1: LANDING & AGENTS CATALOG           */}
           {/* ========================================== */}
           {view === "explore" && (
-            <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8">
-              {/* Hero Section */}
-              <div className="premium-hero rounded-3xl sm:rounded-[28px] overflow-hidden border border-indigo-300/15 p-5 sm:p-9 lg:p-11 mb-8">
-                <div className="grid grid-cols-1 lg:grid-cols-[1.18fr_0.82fr] items-center gap-8 lg:gap-10">
-                  <div className="relative z-10 max-w-2xl">
-                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-violet-400/10 border border-violet-300/20 text-violet-200 text-[11px] font-semibold tracking-wider uppercase mb-5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-violet-400 shadow-[0_0_10px_#a78bfa]" />
-                      AI Agent Studio & Hub
-                    </div>
-                    <h1 className="text-[28px] sm:text-[42px] lg:text-[48px] font-extrabold text-white tracking-[-0.04em] leading-[1.12] mb-4">
-                      A world of agents. <span className="hero-accent block sm:inline">Built by you.</span>
-                    </h1>
-                    <p className="text-slate-300/85 text-sm sm:text-base leading-[1.75] max-w-xl mb-6">
-                      Discover specialized AI assistants, or turn your raw idea into a deterministic, production-grade agent with our Hybrid XML Prompt Architect.
-                    </p>
-                    <div className="flex flex-wrap items-center gap-3">
-                      <button
-                        onClick={() => (token ? setShowCreateModal(true) : (setAuthMode("login"), setShowAuthModal(true)))}
-                        className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-400 hover:to-violet-500 px-5 py-3 text-sm text-white font-semibold shadow-lg shadow-indigo-600/25 transition-all hover:-translate-y-0.5"
-                      >
-                        <Icon name="sparkles" className="w-4 h-4" />
-                        <span>Build an Agent</span>
-                        <Icon name="arrow" className="w-4 h-4" />
-                      </button>
-                      <span className="text-xs text-slate-400 hidden sm:inline">
-                        Supports Arabic & English instructions
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Desktop Prompt Architect Visual Preview */}
-                  <div className="workflow-panel relative z-10 rounded-2xl p-5 sm:p-6 hidden lg:block">
-                    <div className="flex items-center justify-between text-[11px] font-mono tracking-wider text-slate-400 mb-4">
-                      <span className="flex items-center gap-1.5 text-indigo-300">
-                        <Icon name="sparkles" className="w-3.5 h-3.5" /> PROMPT ARCHITECT
-                      </span>
-                      <span className="flex items-center gap-1.5 text-emerald-300 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full text-[10px]">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> XML ENGINE
-                      </span>
-                    </div>
-                    <div className="rounded-xl bg-[#0B111E] border border-white/10 px-4 py-3 mb-2.5">
-                      <p className="text-[10px] text-slate-500 uppercase tracking-[0.14em] mb-1">01 · Raw Idea</p>
-                      <p className="text-xs sm:text-sm text-slate-200">“A senior Node.js & MongoDB code reviewer”</p>
-                    </div>
-                    <div className="flex justify-center text-violet-400 my-1.5">
-                      <Icon name="arrow" className="w-4 h-4 rotate-90" />
-                    </div>
-                    <div className="rounded-xl bg-indigo-500/[0.08] border border-indigo-400/25 px-4 py-3.5 font-mono text-[11.5px] leading-relaxed">
-                      <p className="text-[10px] font-sans text-violet-300 uppercase tracking-[0.12em] mb-1.5">02 · Deterministic Hybrid XML</p>
-                      <p className="text-emerald-300/90">&lt;system_prompt&gt;</p>
-                      <p className="text-indigo-300 pl-3">&lt;role&gt;Principal Backend Architect&lt;/role&gt;</p>
-                      <p className="text-sky-300 pl-3">&lt;guardrails&gt;Zero hallucinations&lt;/guardrails&gt;</p>
-                      <p className="text-emerald-300/90">&lt;/system_prompt&gt;</p>
-                    </div>
-                  </div>
+            <main className="flex-1">
+              {/* 1. HERO SECTION (Exact Match to image_1e78e0.png) */}
+              <section className="max-w-5xl mx-auto px-4 sm:px-6 pt-12 pb-16 sm:pt-16 sm:pb-20 text-center">
+                {/* Yellow Square-Dot Badge */}
+                <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-brandYellow border-2 border-line shadow-sm text-xs sm:text-sm font-extrabold text-ink mb-6">
+                  <span className="w-2 h-2 bg-darkPanel inline-block" />
+                  <span>{lang === "ar" ? "إيه هو AgentTube؟" : "What is AgentTube?"}</span>
                 </div>
-              </div>
 
-              {/* Section Header & Category Pills */}
-              <div className="flex items-center justify-between gap-2 mb-4">
-                <div>
-                  <h2 className="text-lg sm:text-xl font-bold tracking-tight text-white">Explore Agents</h2>
-                  <p className="text-xs sm:text-sm text-slate-400 mt-0.5">Select a specialist to start a live streaming session.</p>
-                </div>
-                {!loadingAgents && (
-                  <span className="text-xs font-medium text-slate-300 bg-bgCard border border-slate-800 rounded-full px-3 py-1 whitespace-nowrap">
-                    {agents.length} {agents.length === 1 ? "agent" : "agents"}
+                {/* Bold Display Headline with Yellow Underline */}
+                <h1 className="text-3xl sm:text-5xl lg:text-[56px] font-extrabold text-ink tracking-tight leading-[1.18] mb-6">
+                  <span className="yellow-underline">
+                    {lang === "ar"
+                      ? "نبني الوكلاء اللي كنا نتمنى نلاقيها"
+                      : "Building the AI Agents we wished existed"}
                   </span>
-                )}
-              </div>
+                </h1>
 
-              <div className="flex items-center gap-2 overflow-x-auto pb-3 mb-6 no-scrollbar">
-                {CATEGORIES.map((cat) => (
+                {/* Subtitle */}
+                <p className="text-base sm:text-xl font-medium text-neutral-700 max-w-2xl mx-auto leading-relaxed mb-8">
+                  {lang === "ar"
+                    ? "منصة وكلاء ذكاء اصطناعي للمستخدم العربي: برومبتات هندسية دقيقة، ذاكرة تراكمية تحفظ تقدمك، وإمكانية إنشاء وكلائك ومشاركتهم بسهولة."
+                    : "An AI Agent Hub for Arabic & English creators, with structured XML prompts, cross-session memory, and easy agent creation and sharing."}
+                </p>
+
+                {/* Primary CTAs */}
+                <div className="flex flex-wrap items-center justify-center gap-3.5 mb-12">
                   <button
-                    key={cat}
-                    onClick={() => setSelectedCategory(cat)}
-                    className={`px-4 py-1.5 rounded-full text-xs sm:text-sm font-medium whitespace-nowrap transition-all ${
-                      selectedCategory === cat
-                        ? "bg-indigo-500 text-white shadow-md shadow-indigo-600/25 border border-indigo-400/50"
-                        : "bg-bgCard/80 text-slate-400 hover:text-white hover:bg-bgElevated border border-slate-800"
-                    }`}
+                    onClick={() => (token ? setShowCreateModal(true) : (setAuthMode("register"), setShowAuthModal(true)))}
+                    className="nb-btn px-6 py-3 bg-brandBlue hover:bg-brandBlueHover text-white text-sm sm:text-base font-extrabold flex items-center gap-2"
                   >
-                    {cat}
+                    <Icon name="sparkles" className="w-5 h-5" />
+                    <span>{lang === "ar" ? "أنشئ وكيلك الآن مجاناً" : "Build Your Agent Now"}</span>
                   </button>
-                ))}
-              </div>
+                  <button
+                    onClick={() => scrollToSection(catalogRef)}
+                    className="nb-btn px-6 py-3 bg-paper hover:bg-brandYellow text-ink text-sm sm:text-base font-extrabold flex items-center gap-2"
+                  >
+                    <span>{lang === "ar" ? "تصفح الوكلاء الجاهزين" : "Browse Agents"}</span>
+                    <Icon name="arrowLeft" className="w-4 h-4" />
+                  </button>
+                </div>
 
-              {/* Agents Grid */}
-              {loadingAgents ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
-                  {[1, 2, 3, 4, 5, 6].map((n) => (
-                    <div key={n} className="rounded-2xl bg-bgCard/60 border border-slate-800/70 p-5 space-y-4 animate-pulse">
-                      <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-2xl bg-slate-800" />
-                        <div className="space-y-2 flex-1">
-                          <div className="h-4 bg-slate-800 rounded w-2/3" />
-                          <div className="h-3 bg-slate-800/80 rounded w-1/3" />
-                        </div>
+                {/* 3 Stat Boxes (Matching image_1e78e0.png) */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-3xl mx-auto">
+                  <div className="nb-box py-6 px-4 text-center">
+                    <div className="text-2xl sm:text-3xl font-extrabold text-ink" dir="ltr">
+                      +{agents.length || 12}
+                    </div>
+                    <p className="text-xs sm:text-sm font-bold text-neutral-600 mt-1">
+                      {lang === "ar" ? "وكيل ذكي متخصص" : "Specialized AI Agents"}
+                    </p>
+                  </div>
+                  <div className="nb-box py-6 px-4 text-center">
+                    <div className="text-2xl sm:text-3xl font-extrabold text-ink" dir="ltr">
+                      +{totalViewsAll.toLocaleString("en-US")}
+                    </div>
+                    <p className="text-xs sm:text-sm font-bold text-neutral-600 mt-1">
+                      {lang === "ar" ? "جلسة تفاعل وتعلّم" : "Learning & Chat Sessions"}
+                    </p>
+                  </div>
+                  <div className="nb-box py-6 px-4 text-center">
+                    <div className="text-2xl sm:text-3xl font-extrabold text-ink" dir="ltr">
+                      100%
+                    </div>
+                    <p className="text-xs sm:text-sm font-bold text-neutral-600 mt-1">
+                      {lang === "ar" ? "يدعم العربية بذاكرة مستمرة" : "Arabic & Persistent Memory"}
+                    </p>
+                  </div>
+                </div>
+              </section>
+
+              {/* 2. HOW IT WORKS / 3 NUMBERED CARDS (Matching image_1e78f9.jpg) */}
+              <section ref={howItWorksRef} className="max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-16 border-t-2 border-line">
+                <div className="mb-10">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 bg-brandYellow border-2 border-line shadow-sm text-xs font-extrabold text-ink mb-4">
+                    <span className="w-2 h-2 bg-darkPanel inline-block" />
+                    <span>{lang === "ar" ? "المنصة بتعمل إيه؟" : "What does it do?"}</span>
+                  </div>
+                  <h2 className="text-2xl sm:text-4xl font-extrabold text-ink leading-tight max-w-2xl">
+                    <span className="yellow-underline">
+                      {lang === "ar"
+                        ? "نبني وكلاء أذكياء يشتغلوا فعلاً ويتذكروا تقدمك"
+                        : "Build smart agents that actually work & remember"}
+                    </span>
+                  </h2>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {/* Card 01 */}
+                  <div className="nb-box p-6 flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center gap-3 mb-5">
+                        <span className="w-8 h-8 bg-brandYellow border-2 border-line shadow-sm flex items-center justify-center font-extrabold text-sm">
+                          01
+                        </span>
+                        <h3 className="text-xl font-extrabold text-ink">
+                          {lang === "ar" ? "هندسة الأوامر" : "Prompt Architect"}
+                        </h3>
                       </div>
-                      <div className="space-y-2">
-                        <div className="h-3 bg-slate-800/70 rounded w-full" />
-                        <div className="h-3 bg-slate-800/70 rounded w-4/5" />
-                      </div>
-                      <div className="pt-3 border-t border-slate-800/60 flex justify-between">
-                        <div className="h-3 bg-slate-800/60 rounded w-24" />
-                        <div className="h-3 bg-slate-800/60 rounded w-12" />
+                      <div className="py-4 bg-cream/60 border border-line mb-5">
+                        <FeatureIllustration type="architect" />
                       </div>
                     </div>
-                  ))}
-                </div>
-              ) : agents.length === 0 ? (
-                <div className="text-center py-16 px-4 bg-bgCard/40 rounded-3xl border border-slate-800/70">
-                  <div className="w-14 h-14 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center mx-auto mb-4 text-indigo-300">
-                    <Icon name="chat" className="w-7 h-7" />
+                    <p className="text-sm font-semibold text-neutral-700 leading-relaxed border-t-2 border-line pt-4">
+                      {lang === "ar"
+                        ? "اكتب وصفاً بسيطاً لفكرتك، ومهندس الأوامر الذكي يحوله فوراً إلى هيكل XML احترافي يمنع الهلوسة ويضبط أسلوب الرد."
+                        : "Describe your idea in plain words, and our AI Architect converts it into a strict Hybrid XML instruction set."}
+                    </p>
                   </div>
-                  <h3 className="text-base font-bold text-slate-100">No agents found</h3>
-                  <p className="text-sm text-slate-400 mt-1 mb-6 max-w-sm mx-auto">
-                    {searchQuery ? `No agents matched "${searchQuery}".` : "Be the first to build an AI agent in this category!"}
-                  </p>
-                  <button
-                    onClick={() => (token ? setShowCreateModal(true) : setShowAuthModal(true))}
-                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold shadow-lg shadow-indigo-600/20"
-                  >
-                    <Icon name="plus" className="w-4 h-4" />
-                    <span>Create Agent</span>
-                  </button>
+
+                  {/* Card 02 */}
+                  <div className="nb-box p-6 flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center gap-3 mb-5">
+                        <span className="w-8 h-8 bg-brandYellow border-2 border-line shadow-sm flex items-center justify-center font-extrabold text-sm">
+                          02
+                        </span>
+                        <h3 className="text-xl font-extrabold text-ink">
+                          {lang === "ar" ? "ذاكرة تراكمية" : "Persistent Memory"}
+                        </h3>
+                      </div>
+                      <div className="py-4 bg-cream/60 border border-line mb-5">
+                        <FeatureIllustration type="memory" />
+                      </div>
+                    </div>
+                    <p className="text-sm font-semibold text-neutral-700 leading-relaxed border-t-2 border-line pt-4">
+                      {lang === "ar"
+                        ? "كل وكيل يحفظ مستواك والدروس اللي أنجزتها تلقائياً؛ حتى لو فتحت محادثة جديدة هيكمل معاك من آخر نقطة توقفت عندها."
+                        : "Every agent automatically tracks your progress and milestones across separate chat sessions."}
+                    </p>
+                  </div>
+
+                  {/* Card 03 */}
+                  <div className="nb-box p-6 flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center gap-3 mb-5">
+                        <span className="w-8 h-8 bg-brandYellow border-2 border-line shadow-sm flex items-center justify-center font-extrabold text-sm">
+                          03
+                        </span>
+                        <h3 className="text-xl font-extrabold text-ink">
+                          {lang === "ar" ? "إنشاء ومشاركة الوكلاء" : "Create & Share Agents"}
+                        </h3>
+                      </div>
+                      <div className="py-4 bg-cream/60 border border-line mb-5">
+                        <FeatureIllustration type="broadcast" />
+                      </div>
+                    </div>
+                    <p className="text-sm font-semibold text-neutral-700 leading-relaxed border-t-2 border-line pt-4">
+                      {lang === "ar"
+                        ? "أنشئ وكلاء ذكاء اصطناعي مخصصين لاحتياجاتك، وانشرهم ليستفيد منهم مجتمع المطورين والمتعلمين."
+                        : "Build AI agents tailored to your needs and share them with the community of developers and learners."}
+                    </p>
+                  </div>
                 </div>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
-                  {agents.map((agent) => {
-                    const catStyle = CATEGORY_STYLES[agent.category] || CATEGORY_STYLES.General;
-                    return (
-                      <div
-                        key={agent._id}
-                        onClick={() => openAgentWorkspace(agent.slug)}
-                        className="agent-card group cursor-pointer rounded-2xl p-5 flex flex-col justify-between hover:-translate-y-1 min-h-[204px]"
+              </section>
+
+              {/* 3. AGENTS CATALOG SECTION (Matching image_1e78e1.jpg) */}
+              <section ref={catalogRef} className="bg-catalogGray border-y-2 border-line py-12 sm:py-16">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6">
+                  {/* Top Banner Bar (Inspired by the top banner in image_1e78e1.jpg) */}
+                  <div className="nb-box p-4 sm:p-6 mb-8">
+                    <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
+                      <div className="flex items-center gap-3">
+                        <span className="px-3 py-1 bg-brandYellow border-2 border-line font-extrabold text-xs sm:text-sm">
+                          {lang === "ar" ? "مكتبة الوكلاء" : "AGENTS HUB"}
+                        </span>
+                        <h2 className="text-lg sm:text-2xl font-extrabold text-ink">
+                          {lang === "ar" ? "اختر وكيلك وابدأ المحادثة فوراً" : "Pick a Specialist & Start Chatting"}
+                        </h2>
+                      </div>
+
+                      {/* Agent catalog search (not Google web search) */}
+                      <div className="relative w-full lg:w-80">
+                        <Icon name="search" className="catalog-search-icon w-4 h-4 text-ink absolute top-1/2 -translate-y-1/2" />
+                        <input
+                          type="text"
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          placeholder={lang === "ar" ? "ابحث عن وكيل بالاسم..." : "Search agents by name..."}
+                          dir="auto"
+                          className="nb-input catalog-search-field w-full py-2 text-sm font-bold placeholder-neutral-500"
+                        />
+                        {searchQuery && (
+                          <button
+                            type="button"
+                            onClick={() => setSearchQuery("")}
+                            className="catalog-search-clear absolute top-1/2 -translate-y-1/2 text-ink hover:text-rose-600 p-1"
+                          >
+                            <Icon name="close" className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Category Filter Buttons */}
+                    <div className="flex items-center gap-2 overflow-x-auto pt-4 mt-4 border-t-2 border-line no-scrollbar">
+                      {CATEGORIES.map((cat) => {
+                        const active = selectedCategory === cat.id;
+                        return (
+                          <button
+                            key={cat.id}
+                            onClick={() => setSelectedCategory(cat.id)}
+                            className={`px-3.5 py-1.5 text-xs sm:text-sm font-extrabold whitespace-nowrap border-2 border-line transition-all ${
+                              active
+                                ? "bg-brandYellow text-ink shadow-sm"
+                                : "bg-paper text-ink hover:bg-cream"
+                            }`}
+                          >
+                            {lang === "ar" ? cat.ar : cat.en}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Agents Grid (Matching image_1e78e1.jpg Course Cards) */}
+                  {loadingAgents ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {[1, 2, 3, 4, 5, 6].map((n) => (
+                        <div key={n} className="nb-box h-72 animate-pulse bg-paper" />
+                      ))}
+                    </div>
+                  ) : agents.length === 0 ? (
+                    <div className="nb-box p-12 text-center">
+                      <h3 className="text-xl font-extrabold text-ink mb-2">
+                        {lang === "ar" ? "لا يوجد وكلاء مطابقون لبحثك" : "No agents found"}
+                      </h3>
+                      <p className="text-sm font-semibold text-neutral-600 mb-6">
+                        {lang === "ar" ? "كن أول من يبني وكيلاً في هذا التصنيف!" : "Be the first to build an agent in this category!"}
+                      </p>
+                      <button
+                        onClick={() => (token ? setShowCreateModal(true) : setShowAuthModal(true))}
+                        className="nb-btn px-5 py-2.5 bg-brandBlue text-white font-extrabold text-sm inline-flex items-center gap-2"
                       >
-                        <div>
-                          <div className="flex items-start justify-between gap-3 mb-3.5">
-                            <div className="flex items-center gap-3 min-w-0">
-                              <img
-                                src={agent.avatarUrl}
-                                alt={agent.name}
-                                className="w-12 h-12 rounded-2xl bg-slate-900 border border-indigo-300/20 object-cover flex-shrink-0 group-hover:border-indigo-400/50 transition-colors"
-                              />
-                              <div className="min-w-0">
-                                <h3 className="font-bold text-slate-100 group-hover:text-indigo-200 transition-colors truncate text-[15px]" dir="auto">
+                        <Icon name="plus" className="w-4 h-4" />
+                        <span>{lang === "ar" ? "إنشاء وكيل جديد" : "Create New Agent"}</span>
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {agents.map((agent) => {
+                        const theme = CARD_THEMES[agent.category] || CARD_THEMES.General;
+                        return (
+                          <div
+                            key={agent._id}
+                            onClick={() => openAgentWorkspace(agent.slug)}
+                            className="nb-card cursor-pointer flex flex-col justify-between overflow-hidden"
+                          >
+                            {/* Top Colored Visual Banner (Like Laravel Red / React Blue / Next.js Black in image_1e78e1.jpg) */}
+                            <div
+                              style={{ backgroundColor: theme.bg, color: theme.text }}
+                              className="agent-card-banner p-5 border-b border-line relative flex items-center justify-between gap-4 min-h-[132px]"
+                            >
+                              <div className="min-w-0 flex-1 z-10">
+                                <span
+                                  style={{ backgroundColor: theme.badgeBg, color: theme.badgeText }}
+                                  className="inline-block px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider border border-line mb-2"
+                                >
+                                  {agent.category || "GENERAL"}
+                                </span>
+                                <h4 className="font-extrabold text-lg sm:text-xl leading-snug line-clamp-2" dir="auto">
                                   {agent.name}
-                                </h3>
-                                <div className="flex flex-wrap items-center gap-1.5 mt-1">
-                                  <span className={`inline-block text-[10px] font-semibold px-2 py-0.5 rounded-md border ${catStyle}`}>
-                                    {agent.category || "General"}
+                                </h4>
+                              </div>
+
+                              <div className="relative flex-shrink-0 z-10">
+                                <img
+                                  src={agent.avatarUrl}
+                                  alt={agent.name}
+                                  className="w-16 h-16 bg-paper border-2 border-line shadow-sm object-cover"
+                                />
+                              </div>
+                            </div>
+
+                            {/* Bottom White Body (Matching image_1e78e1.jpg) */}
+                            <div className="p-5 flex-1 flex flex-col justify-between bg-paper">
+                              <div>
+                                <div className="flex items-center justify-between text-xs font-bold text-neutral-500 mb-1.5">
+                                  <span>@{agent.creator?.username || "creator"}</span>
+                                  <span className="inline-flex items-center gap-1 text-ink">
+                                    <Icon name="eye" className="w-3.5 h-3.5" />
+                                    {agent.viewsCount || 0}
                                   </span>
-                                  {agent.enableWebSearch && (
-                                    <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-md bg-sky-500/10 text-sky-300 border border-sky-400/20" title="Web Search Enabled">
-                                      <Icon name="globe" className="w-2.5 h-2.5" /> Web
-                                    </span>
-                                  )}
                                 </div>
+
+                                <p className="text-sm font-semibold text-neutral-700 line-clamp-2 leading-relaxed mb-4" dir="auto">
+                                  {agent.description}
+                                </p>
+                              </div>
+
+                              {/* Bottom Action Bar */}
+                              <div className="pt-3 border-t-2 border-line flex items-center justify-between">
+                                <span className="px-2.5 py-1 bg-darkPanel text-brandYellow text-xs font-extrabold">
+                                  {lang === "ar" ? "ذاكرة ذكية مفعّلة" : "Smart Memory"}
+                                </span>
+                                <span className="font-extrabold text-sm text-brandBlue inline-flex items-center gap-1">
+                                  <span>{lang === "ar" ? "ابدأ الدردشة" : "Start Chat"}</span>
+                                  <Icon name="arrowLeft" className="w-4 h-4" />
+                                </span>
                               </div>
                             </div>
                           </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </section>
 
-                          <p className="text-[13px] text-slate-400 line-clamp-2 leading-[1.7] mb-5" dir="auto">
-                            {agent.description}
-                          </p>
-                        </div>
+              {/* 4. FAQ ACCORDION SECTION (Exact Match to image_1e78df.png) */}
+              <section ref={faqRef} className="max-w-4xl mx-auto px-4 sm:px-6 py-14 sm:py-20">
+                <div className="text-center mb-10">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 bg-brandYellow border-2 border-line shadow-sm text-xs font-extrabold text-ink mb-4">
+                    <span className="w-2 h-2 bg-darkPanel inline-block" />
+                    <span>{lang === "ar" ? "الأسئلة الشائعة" : "FAQ"}</span>
+                  </div>
+                  <h2 className="text-2xl sm:text-4xl font-extrabold text-ink">
+                    {lang === "ar" ? "إجابات واضحة على أهم أسئلتك" : "Clear Answers to Common Questions"}
+                  </h2>
+                </div>
 
-                        <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400">
-                          <div className="flex items-center gap-2 min-w-0">
-                            {agent.creator?.avatarUrl && (
-                              <img src={agent.creator.avatarUrl} alt="" className="w-4 h-4 rounded-full flex-shrink-0" />
-                            )}
-                            <span className="truncate max-w-[130px] text-slate-400">
-                              @{agent.creator?.username || "creator"}
-                            </span>
+                <div className="space-y-4">
+                  {FAQ_ITEMS.map((item, idx) => {
+                    const isOpen = openFaqIndex === idx;
+                    return (
+                      <div key={idx} className="nb-box overflow-hidden">
+                        <button
+                          type="button"
+                          onClick={() => setOpenFaqIndex(isOpen ? -1 : idx)}
+                          className="w-full px-5 py-4 flex items-center justify-between gap-4 text-start bg-paper hover:bg-cream/50 transition-colors"
+                        >
+                          <span className="text-base sm:text-lg font-extrabold text-ink">
+                            {lang === "ar" ? item.q_ar : item.q_en}
+                          </span>
+                          {/* Yellow Square Toggle Button (+ / ×) matching image_1e78df.png */}
+                          <span className="w-8 h-8 flex-shrink-0 bg-brandYellow border-2 border-line flex items-center justify-center font-extrabold text-lg text-ink">
+                            {isOpen ? "×" : "+"}
+                          </span>
+                        </button>
+                        {isOpen && (
+                          <div className="px-5 py-4 border-t-2 border-line bg-paper text-sm sm:text-base font-semibold text-neutral-700 leading-relaxed">
+                            {lang === "ar" ? item.a_ar : item.a_en}
                           </div>
-                          <div className="flex items-center gap-3">
-                            <span className="flex items-center gap-1 text-slate-400">
-                              <Icon name="eye" className="w-3.5 h-3.5 text-slate-500" />
-                              <span>{agent.viewsCount || 0}</span>
-                            </span>
-                            <span className="text-indigo-400 font-semibold opacity-90 group-hover:translate-x-0.5 transition-transform inline-flex items-center gap-0.5">
-                              Chat <Icon name="arrow" className="w-3 h-3" />
-                            </span>
-                          </div>
-                        </div>
+                        )}
                       </div>
                     );
                   })}
                 </div>
-              )}
+              </section>
+
+              {/* Simple Neo-Brutalist Footer */}
+              <footer className="bg-darkPanel text-cream border-t-2 border-line py-8 px-4 sm:px-6">
+                <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <div className="flex items-center gap-2.5">
+                    <span className="px-2 py-0.5 bg-brandYellow text-ink font-extrabold text-sm">AgentTube</span>
+                    <span className="text-xs sm:text-sm font-bold text-neutral-300">
+                      {lang === "ar" ? "استوديو ومنصة وكلاء الذكاء الاصطناعي بالعربي" : "Arabic & English AI Agent Studio"}
+                    </span>
+                  </div>
+                  <p className="text-xs font-bold text-neutral-400">
+                    © {new Date().getFullYear()} AgentTube Studio
+                  </p>
+                </div>
+              </footer>
             </main>
           )}
 
           {/* ========================================== */}
-          {/* VIEW 2: MY PROFILE                         */}
+          {/* VIEW 2: MY PROFILE (Neo-Brutalist Style)   */}
           {/* ========================================== */}
           {view === "profile" && user && (
             <ProfilePage
               user={user}
+              lang={lang}
               agents={profileAgents}
               loading={profileLoading}
               error={profileError}
@@ -1370,121 +1511,133 @@
           {/* Static Outer Frame + Smooth Chat Scroll    */}
           {/* ========================================== */}
           {view === "chat" && activeAgent && (
-            <div className="chat-shell flex-1 flex min-h-0 overflow-hidden">
+            <div className="flex-1 flex min-h-0 overflow-hidden bg-cream">
               {/* Mobile Backdrop for History Drawer */}
               {showMobileHistory && (
                 <button
                   type="button"
-                  aria-label="Close chat history"
+                  aria-label={lang === "ar" ? "إغلاق سجل المحادثات" : "Close chat history"}
                   onClick={() => setShowMobileHistory(false)}
-                  className="md:hidden fixed inset-0 z-40 bg-black/70 backdrop-blur-xs transition-opacity"
+                  className="md:hidden fixed inset-0 z-40 bg-black/60"
                 />
               )}
 
-              {/* Left Sidebar: Static Frame, Independent History Scroll */}
+              {/* Static Left/Right Sidebar */}
               <aside
                 id="conversation-history"
-                aria-label="Chat history"
-                className={`chat-aside ${
+                aria-label={lang === "ar" ? "سجل المحادثات" : "Chat history"}
+                className={`bg-paper ${
                   showMobileHistory
-                    ? "fixed inset-y-0 left-0 z-50 flex w-[min(86vw,320px)] shadow-2xl"
+                    ? `fixed inset-y-0 ${lang === "ar" ? "right-0" : "left-0"} z-50 flex w-[min(86vw,320px)] border-s-2 border-line shadow-xl`
                     : "hidden"
-                } md:static md:z-auto md:flex md:w-[300px] md:h-full md:flex-shrink-0 md:shadow-none flex-col border-r border-slate-800/80 min-h-0 overflow-hidden`}
+                } md:static md:z-auto md:flex md:w-[310px] md:h-full md:flex-shrink-0 flex-col border-e-2 border-line min-h-0 overflow-hidden`}
               >
                 {/* Mobile Drawer Header */}
-                <div className="md:hidden flex-shrink-0 flex items-center justify-between px-4 py-3.5 border-b border-slate-800/80">
-                  <span className="font-bold text-sm text-white">Workspace & History</span>
+                <div className="md:hidden flex-shrink-0 flex items-center justify-between px-4 py-3.5 bg-brandYellow border-b-2 border-line">
+                  <span className="font-extrabold text-sm text-ink">{lang === "ar" ? "سجل المحادثات والذاكرة" : "History & Memory"}</span>
                   <button
                     type="button"
                     onClick={() => setShowMobileHistory(false)}
-                    aria-label="Close history"
-                    className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10"
+                    className="p-1 bg-paper border border-line text-ink"
                   >
-                    <Icon name="close" className="w-5 h-5" />
+                    <Icon name="close" className="w-4 h-4" />
                   </button>
                 </div>
 
-                {/* Static Agent Info Section inside Sidebar */}
-                <div className="flex-shrink-0 p-4 border-b border-slate-800/80">
+                {/* Static Agent Info Section */}
+                <div className="flex-shrink-0 p-4 border-b-2 border-line bg-cream/60">
                   <button
                     onClick={() => {
                       setView("explore");
                       setShowMobileHistory(false);
                       fetchAgents();
                     }}
-                    className="flex items-center gap-2 text-xs font-medium text-slate-400 hover:text-white mb-4 transition-colors"
+                    className="flex items-center gap-1.5 text-xs font-extrabold text-ink hover:text-brandBlue mb-3.5 transition-colors"
                   >
                     <Icon name="back" className="w-4 h-4" />
-                    <span>Back to Explore</span>
+                    <span>{lang === "ar" ? "العودة لاستكشاف الوكلاء" : "Back to Explore"}</span>
                   </button>
 
                   <div className="flex items-center gap-3">
                     <img
                       src={activeAgent.avatarUrl}
                       alt={activeAgent.name}
-                      className="w-11 h-11 rounded-xl bg-slate-900 border border-slate-700/80 object-cover flex-shrink-0"
+                      className="w-12 h-12 bg-paper border-2 border-line shadow-sm object-cover flex-shrink-0"
                     />
                     <div className="min-w-0">
-                      <h2 className="font-bold text-slate-100 truncate text-sm" dir="auto">
+                      <h2 className="font-extrabold text-ink truncate text-sm" dir="auto">
                         {activeAgent.name}
                       </h2>
-                      <div className="flex items-center gap-1.5 mt-0.5">
-                        <span className="text-[11px] font-medium text-indigo-400">{activeAgent.category}</span>
-                        {activeAgent.enableWebSearch && (
-                          <span className="text-[10px] px-1.5 py-0.2 rounded bg-sky-500/15 text-sky-300 border border-sky-400/20">
-                            Web
-                          </span>
-                        )}
+                      <div className="flex items-center gap-1.5 mt-1">
+                        <span className="px-2 py-0.5 bg-brandYellow border border-line text-[10px] font-extrabold text-ink">
+                          {activeAgent.category}
+                        </span>
                       </div>
                     </div>
                   </div>
 
-                  <p className="text-xs text-slate-400 mt-3 leading-relaxed line-clamp-3" dir="auto">
+                  <p className="text-xs font-semibold text-neutral-700 mt-3 leading-relaxed line-clamp-2" dir="auto">
                     {activeAgent.description}
                   </p>
 
-                  <button
-                    onClick={() => {
-                      setActiveConversationId(null);
-                      setMessages([]);
-                      setShowMobileHistory(false);
-                    }}
-                    className="mt-4 w-full py-2.5 px-3 rounded-xl bg-indigo-600/15 hover:bg-indigo-600/25 text-indigo-300 border border-indigo-500/30 text-xs font-semibold flex items-center justify-center gap-2 transition-colors"
-                  >
-                    <Icon name="plus" className="w-4 h-4" />
-                    <span>New Conversation</span>
-                  </button>
+                  {/* Action Buttons: New Chat & Memory Inspector */}
+                  <div className="mt-3.5 flex gap-2">
+                    <button
+                      onClick={() => {
+                        setActiveConversationId(null);
+                        setMessages([]);
+                        setShowMobileHistory(false);
+                      }}
+                      className="flex-1 py-2 px-3 bg-brandBlue hover:bg-brandBlueHover text-white text-xs font-extrabold nb-btn flex items-center justify-center gap-1.5"
+                    >
+                      <Icon name="plus" className="w-4 h-4" />
+                      <span>{lang === "ar" ? "محادثة جديدة" : "New Chat"}</span>
+                    </button>
+
+                    {token && (
+                      <button
+                        type="button"
+                        onClick={() => setShowMemoryModal(true)}
+                        title={lang === "ar" ? "عرض ذاكرة التقدم المحفوظة" : "View saved progress"}
+                        className={`py-2 px-2.5 nb-btn text-xs font-extrabold flex items-center gap-1 ${
+                          agentMemory ? "bg-brandYellow text-ink" : "bg-paper text-neutral-500"
+                        }`}
+                      >
+                        <Icon name="brain" className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
                 </div>
 
-                {/* Independent Scrollable Conversation History List */}
-                <div className="sidebar-scroll-area flex-1 min-h-0 p-3 space-y-1">
-                  <div className="px-2 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-                    Chat History
+                {/* Independent Scrollable Conversation History */}
+                <div className="sidebar-scroll-area flex-1 min-h-0 p-3 space-y-2 bg-paper">
+                  <div className="px-1 py-1 text-[11px] font-extrabold uppercase tracking-wider text-neutral-500">
+                    {lang === "ar" ? "المحادثات السابقة" : "Chat History"}
                   </div>
                   {!token ? (
-                    <p className="text-xs text-slate-500 px-2 py-3">
-                      Sign in to save and access your chat history.
+                    <p className="text-xs font-semibold text-neutral-600 p-2 bg-cream border border-line">
+                      {lang === "ar" ? "سجّل الدخول لحفظ محادثاتك وتقدمك مع هذا الوكيل." : "Sign in to save your chat history and learning progress."}
                     </p>
                   ) : conversations.length === 0 ? (
-                    <p className="text-xs text-slate-500 px-2 py-3">
-                      No previous chats with this agent yet.
+                    <p className="text-xs font-semibold text-neutral-500 px-2 py-3">
+                      {lang === "ar" ? "لا توجد محادثات سابقة بعد." : "No conversations yet."}
                     </p>
                   ) : (
                     conversations.map((conv) => (
                       <div
                         key={conv._id}
                         onClick={() => selectConversation(conv._id)}
-                        className={`group flex items-center justify-between px-3 py-2.5 rounded-xl text-xs cursor-pointer transition-colors ${
+                        className={`group flex items-center justify-between px-3 py-2.5 text-xs font-bold cursor-pointer border-2 transition-all ${
                           activeConversationId === conv._id
-                            ? "bg-indigo-600/20 text-indigo-200 border border-indigo-500/30 font-medium"
-                            : "text-slate-400 hover:bg-slate-800/60 hover:text-slate-200"
+                            ? "bg-brandYellow border-line shadow-sm text-ink"
+                            : "bg-paper border-line hover:border-line text-ink"
                         }`}
                       >
-                        <span className="truncate pr-2" dir="auto">{conv.title || "New Chat"}</span>
+                        <span className="truncate pl-2" dir="auto">{conv.title || (lang === "ar" ? "محادثة جديدة" : "New chat")}</span>
                         <button
                           onClick={(e) => handleDeleteConversation(e, conv._id)}
-                          className="opacity-100 md:opacity-0 md:group-hover:opacity-100 p-1 text-slate-500 hover:text-rose-400 transition-opacity"
-                          title="Delete conversation"
+                          className="opacity-100 md:opacity-0 md:group-hover:opacity-100 p-1 text-ink hover:text-rose-600 transition-opacity"
+                          title={lang === "ar" ? "حذف المحادثة" : "Delete conversation"}
                         >
                           <Icon name="trash" className="w-3.5 h-3.5" />
                         </button>
@@ -1495,68 +1648,65 @@
               </aside>
 
               {/* Main Chat Column */}
-              <section className="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden bg-transparent">
+              <section className="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden chat-grid-bg">
                 {/* Static Desktop Workspace Top Bar */}
-                <div className="hidden md:flex flex-shrink-0 items-center justify-between px-6 py-3 bg-bgSurface/80 backdrop-blur-md border-b border-slate-800/70">
+                <div className="hidden md:flex flex-shrink-0 items-center justify-between px-6 py-3 bg-paper border-b-2 border-line">
                   <div className="flex items-center gap-3 min-w-0">
                     <img
                       src={activeAgent.avatarUrl}
                       alt=""
-                      className="w-8 h-8 rounded-lg bg-slate-900 border border-slate-700/80 object-cover"
+                      className="w-9 h-9 border-2 border-line bg-cream object-cover"
                     />
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        <h3 className="text-sm font-bold text-white truncate" dir="auto">{activeAgent.name}</h3>
-                        <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-indigo-500/15 text-indigo-300 border border-indigo-500/20">
-                          {activeAgent.category}
-                        </span>
-                        {activeAgent.enableWebSearch && (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-sky-500/15 text-sky-300 border border-sky-400/20">
-                            <Icon name="globe" className="w-3 h-3" /> Search Grounding
-                          </span>
-                        )}
-                      </div>
+                    <div className="flex items-center gap-2 min-w-0">
+                      <h3 className="text-base font-extrabold text-ink truncate" dir="auto">{activeAgent.name}</h3>
+                      <span className="px-2 py-0.5 bg-brandYellow border border-line text-[10px] font-extrabold text-ink">
+                        {activeAgent.category}
+                      </span>
+                      {agentMemory && (
+                        <button
+                          type="button"
+                          onClick={() => setShowMemoryModal(true)}
+                          className="inline-flex items-center gap-1 px-2 py-0.5 bg-sageMist border border-line text-[10px] font-extrabold text-ink hover:bg-sageMist"
+                        >
+                          <Icon name="brain" className="w-3 h-3" /> {lang === "ar" ? "ذاكرة التقدم نشطة" : "Memory active"}
+                        </button>
+                      )}
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setActiveConversationId(null);
-                        setMessages([]);
-                      }}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:text-white bg-white/5 hover:bg-white/10 border border-slate-700/60 transition-colors"
-                    >
-                      <Icon name="plus" className="w-3.5 h-3.5" />
-                      <span>New Chat</span>
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveConversationId(null);
+                      setMessages([]);
+                    }}
+                    className="nb-btn px-3.5 py-1.5 bg-brandYellow text-ink text-xs font-extrabold inline-flex items-center gap-1.5"
+                  >
+                    <Icon name="plus" className="w-3.5 h-3.5" />
+                    <span>{lang === "ar" ? "شات جديد" : "New Chat"}</span>
+                  </button>
                 </div>
 
                 {/* Static Mobile Agent Header */}
-                <div className="md:hidden flex-shrink-0 flex items-center justify-between px-3 py-2 bg-bgSurface/95 border-b border-slate-800/90 gap-2">
+                <div className="md:hidden flex-shrink-0 flex items-center justify-between px-3 py-2 bg-paper border-b-2 border-line gap-2">
                   <button
                     onClick={() => setView("explore")}
-                    className="flex items-center gap-1 text-xs font-medium text-slate-300 py-1.5 px-2 rounded-lg hover:bg-white/5 active:bg-white/10"
+                    className="nb-btn flex items-center gap-1 text-xs font-extrabold text-ink py-1 px-2.5 bg-cream"
                   >
-                    <Icon name="back" className="w-4 h-4" />
-                    <span>Back</span>
+                    <Icon name="back" className="w-3.5 h-3.5" />
+                    <span>{lang === "ar" ? "رجوع" : "Back"}</span>
                   </button>
                   <div className="min-w-0 flex-1 text-center">
-                    <span className="font-bold text-sm text-white truncate block" dir="auto">
+                    <span className="font-extrabold text-sm text-ink truncate block" dir="auto">
                       {activeAgent.name}
                     </span>
                   </div>
-                  <div className="flex items-center gap-1 flex-shrink-0">
+                  <div className="flex items-center gap-1.5 flex-shrink-0">
                     <button
                       type="button"
                       onClick={() => setShowMobileHistory(true)}
-                      aria-label="Open chat history"
-                      aria-controls="conversation-history"
-                      aria-expanded={showMobileHistory}
-                      title="Chat history"
-                      className="w-9 h-9 flex items-center justify-center rounded-lg text-indigo-300 bg-indigo-500/10 hover:bg-indigo-500/20"
+                      aria-label={lang === "ar" ? "سجل المحادثات" : "Chat history"}
+                      className="nb-btn w-8 h-8 flex items-center justify-center bg-brandYellow text-ink"
                     >
                       <Icon name="chat" className="w-4 h-4" />
                     </button>
@@ -1566,61 +1716,58 @@
                         setActiveConversationId(null);
                         setMessages([]);
                       }}
-                      title="New Chat"
-                      className="w-9 h-9 flex items-center justify-center rounded-lg text-slate-200 bg-white/5 hover:bg-white/10"
+                      title={lang === "ar" ? "شات جديد" : "New chat"}
+                      className="nb-btn w-8 h-8 flex items-center justify-center bg-brandBlue text-white"
                     >
                       <Icon name="plus" className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
 
-                {/* ONLY THIS AREA SCROLLS (Smoothly on Mobile & PC) */}
+                {/* ONLY THIS AREA SCROLLS SMOOTHLY */}
                 <div
                   ref={chatContainerRef}
                   className="chat-scroll-area flex-1 min-h-0 px-3 sm:px-7 py-5 sm:py-7"
                 >
                   <div className="max-w-3xl mx-auto">
                     {loadingMessages ? (
-                      <div className="flex flex-col items-center justify-center py-16 gap-3 text-sm text-slate-400">
-                        <span className="w-6 h-6 border-2 border-indigo-500/30 border-t-indigo-400 rounded-full animate-spin" />
-                        <span>Loading conversation...</span>
+                      <div className="nb-box p-8 text-center font-extrabold text-sm">
+                        {lang === "ar" ? "جاري تحميل المحادثة..." : "Loading conversation..."}
                       </div>
                     ) : messages.length === 0 ? (
                       /* Empty State & Starter Prompts */
-                      <div className="text-center py-8 sm:py-16 space-y-6">
-                        <div className="relative inline-block">
+                      <div className="py-6 sm:py-12 space-y-6">
+                        <div className="nb-box-lg p-6 sm:p-8 text-center max-w-xl mx-auto">
                           <img
                             src={activeAgent.avatarUrl}
                             alt={activeAgent.name}
-                            className="w-20 h-20 rounded-3xl mx-auto bg-bgCard border border-indigo-400/30 p-1.5 shadow-2xl shadow-indigo-950/50"
+                            className="w-20 h-20 mx-auto bg-cream border-2 border-line shadow-sm mb-4"
                           />
-                          {activeAgent.enableWebSearch && (
-                            <span className="absolute -bottom-1.5 -right-1.5 px-2 py-0.5 rounded-full bg-sky-500 text-white text-[10px] font-bold shadow-md flex items-center gap-1">
-                              <Icon name="globe" className="w-3 h-3" /> Web
-                            </span>
-                          )}
-                        </div>
-                        <div className="space-y-2 max-w-md mx-auto px-2">
-                          <h3 className="text-xl sm:text-2xl font-bold text-white" dir="auto">
+                          <h3 className="text-xl sm:text-2xl font-extrabold text-ink mb-2" dir="auto">
                             {activeAgent.name}
                           </h3>
-                          <p className="text-xs sm:text-sm text-slate-400 leading-relaxed" dir="auto">
+                          <p className="text-xs sm:text-sm font-semibold text-neutral-700 leading-relaxed" dir="auto">
                             {activeAgent.description}
                           </p>
+                          {agentMemory && (
+                            <div className="mt-4 p-2.5 bg-brandYellow/40 border-2 border-line text-xs font-extrabold text-ink">
+                              {lang === "ar" ? "لديك تقدّم محفوظ مع هذا الوكيل — اسأله: وين وصلنا؟" : "Your progress is saved — ask this agent where you left off."}
+                            </div>
+                          )}
                         </div>
 
                         {activeAgent.starterPrompts?.length > 0 && (
-                          <div className="max-w-xl mx-auto pt-2 px-1">
-                            <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">
-                              Suggested Prompts
+                          <div className="max-w-xl mx-auto">
+                            <p className="text-xs font-extrabold uppercase tracking-wider text-ink mb-3 text-center">
+                              {lang === "ar" ? "ابدأ بأحد هذه الاقتراحات:" : "Suggested Starters:"}
                             </p>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                               {activeAgent.starterPrompts.map((prompt, idx) => (
                                 <button
                                   key={idx}
                                   onClick={() => handleSendMessage(prompt)}
                                   dir="auto"
-                                  className="text-start p-3.5 sm:p-4 rounded-2xl bg-bgCard/90 hover:bg-bgElevated border border-slate-800 hover:border-indigo-500/50 text-xs sm:text-[13px] text-slate-200 transition-all hover:-translate-y-0.5 shadow-sm"
+                                  className="nb-card text-start p-4 text-xs sm:text-sm font-bold text-ink hover:bg-brandYellow"
                                 >
                                   {prompt}
                                 </button>
@@ -1639,48 +1786,53 @@
                           return (
                             <div
                               key={msg._id || i}
-                              className={`flex gap-2.5 sm:gap-3.5 min-w-0 ${isUser ? "justify-end" : "justify-start"}`}
+                              dir="rtl" className={`flex gap-3 min-w-0 ${isUser ? "justify-start" : "justify-end"}`}
                             >
+                              {isUser && (
+                                <div className="w-8 h-8 flex-shrink-0 bg-brandYellow border-2 border-line shadow-sm flex items-center justify-center font-extrabold text-xs mt-1">
+                                  {lang === "ar" ? "أنت" : "You"}
+                                </div>
+                              )}
+                              <div className={`min-w-0 flex flex-col ${isUser ? "items-start max-w-[86%] sm:max-w-[78%]" : "items-end max-w-[calc(100%-44px)] sm:max-w-[90%]"}`}>
+                                <div
+                                  className={`min-w-0 w-full px-4 sm:px-5 py-3.5 border-2 border-line ${
+                                    isUser
+                                      ? "user-bubble bg-brandBlue text-white shadow-sm"
+                                      : "bg-paper text-ink shadow-sm"
+                                  }`}
+                                >
+                                  <FormattedMessage text={msg.text} uiLang={lang} />
+                                  {isLastStreaming && (
+                                    <span className="inline-block w-2.5 h-4 mr-1 align-middle bg-brandYellow border border-line animate-pulse" />
+                                  )}
+                                </div>
+                                {!isUser && !isLastStreaming && msg.text && (
+                                  <CopyMessageButton text={msg.text} lang={lang} />
+                                )}
+                              </div>
                               {!isUser && (
                                 <img
                                   src={activeAgent.avatarUrl}
                                   alt="AI"
-                                  className="w-8 h-8 rounded-xl bg-slate-900 border border-slate-700/80 flex-shrink-0 mt-1 object-cover"
+                                  className="w-8 h-8 bg-paper border-2 border-line shadow-sm flex-shrink-0 mt-1 object-cover"
                                 />
                               )}
-                              <div className={`min-w-0 flex flex-col ${isUser ? "items-end max-w-[88%] sm:max-w-[78%]" : "items-start max-w-[calc(100%-44px)] sm:max-w-[90%]"}`}>
-                                <div
-                                  className={`min-w-0 w-full rounded-2xl px-4 sm:px-5 py-3.5 ${
-                                    isUser
-                                      ? "chat-message-user text-white rounded-br-sm"
-                                      : "chat-message-assistant text-slate-200 rounded-bl-sm"
-                                  }`}
-                                >
-                                  <FormattedMessage text={msg.text} />
-                                  {isLastStreaming && (
-                                    <span className="inline-block w-2 h-4 ml-1 align-middle bg-indigo-400 animate-pulse rounded-xs" />
-                                  )}
-                                </div>
-                                {!isUser && !isLastStreaming && msg.text && (
-                                  <CopyMessageButton text={msg.text} />
-                                )}
-                              </div>
                             </div>
                           );
                         })}
 
                         {sendingMessage && messages[messages.length - 1]?.role === "model" && !messages[messages.length - 1]?.text && (
-                          <div className="flex gap-3 justify-start">
+                          <div dir="rtl" className="flex gap-3 justify-end">
+                            <div className="nb-box px-4 py-3 flex items-center gap-1.5">
+                              <span className="w-2.5 h-2.5 bg-brandYellow border border-line animate-bounce"></span>
+                              <span className="w-2.5 h-2.5 bg-brandBlue border border-line animate-bounce" style={{ animationDelay: "150ms" }}></span>
+                              <span className="w-2.5 h-2.5 bg-darkPanel animate-bounce" style={{ animationDelay: "300ms" }}></span>
+                            </div>
                             <img
                               src={activeAgent.avatarUrl}
                               alt="AI"
-                              className="w-8 h-8 rounded-xl bg-slate-900 border border-slate-700/80 flex-shrink-0 object-cover"
+                              className="w-8 h-8 bg-paper border-2 border-line flex-shrink-0 object-cover"
                             />
-                            <div className="chat-message-assistant rounded-2xl rounded-bl-sm px-4 py-3.5 flex items-center gap-1.5">
-                              <span className="w-2 h-2 rounded-full bg-indigo-400 animate-bounce"></span>
-                              <span className="w-2 h-2 rounded-full bg-indigo-400 animate-bounce" style={{ animationDelay: "150ms" }}></span>
-                              <span className="w-2 h-2 rounded-full bg-indigo-400 animate-bounce" style={{ animationDelay: "300ms" }}></span>
-                            </div>
                           </div>
                         )}
                       </div>
@@ -1688,10 +1840,10 @@
                   </div>
                 </div>
 
-                {/* Static Bottom Chat Input Box */}
-                <div className="chat-composer-wrap flex-shrink-0 px-3 sm:px-7 pt-2.5 pb-4 bg-[#080D18]/95 border-t border-slate-800/80">
+                {/* Static Bottom Chat Composer */}
+                <div className="chat-composer-wrap flex-shrink-0 px-3 sm:px-7 pt-3 pb-4 bg-paper border-t-2 border-line">
                   <div className="max-w-3xl mx-auto">
-                    <div className="chat-composer relative flex items-end gap-2 rounded-2xl p-2 transition-all">
+                    <div className="nb-box flex items-end gap-2 p-2">
                       <textarea
                         ref={textareaRef}
                         rows="1"
@@ -1703,16 +1855,17 @@
                             handleSendMessage();
                           }
                         }}
-                        placeholder={`Message ${activeAgent.name}...`}
+                        placeholder={lang === "ar" ? `اكتب رسالتك إلى ${activeAgent.name}...` : `Message ${activeAgent.name}...`}
                         dir="auto"
-                        className="w-full min-w-0 max-h-[140px] bg-transparent px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:outline-none resize-none leading-relaxed"
+                        className="w-full min-w-0 max-h-[140px] bg-transparent px-3 py-2 text-sm font-bold text-ink placeholder-neutral-500 focus:outline-none resize-none leading-relaxed"
                       />
                       <button
                         onClick={() => handleSendMessage()}
                         disabled={!inputMessage.trim() || sendingMessage}
-                        aria-label="Send message"
-                        className="p-2.5 sm:p-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 disabled:hover:bg-indigo-600 text-white transition-all flex-shrink-0 shadow-lg shadow-indigo-600/25"
+                        aria-label={lang === "ar" ? "إرسال" : "Send"}
+                        className="nb-btn p-2.5 sm:px-4 sm:py-2.5 bg-brandBlue hover:bg-brandBlueHover disabled:opacity-40 text-white font-extrabold text-xs flex items-center gap-1.5 flex-shrink-0"
                       >
+                        <span className="hidden sm:inline">{lang === "ar" ? "إرسال" : "Send"}</span>
                         <Icon name="send" className="w-4 h-4" />
                       </button>
                     </div>
@@ -1723,22 +1876,22 @@
           )}
 
           {/* ========================================== */}
-          {/* MOBILE BOTTOM NAVIGATION BAR (Explore/Profile only) */}
+          {/* MOBILE BOTTOM NAVIGATION (Explore/Profile) */}
           {/* ========================================== */}
           {!isChatView && (
             <nav
-              aria-label="Mobile navigation"
-              className="sm:hidden fixed bottom-0 inset-x-0 z-30 glass-panel border-t border-slate-800/90 px-2 pt-1.5 pb-[calc(0.375rem+env(safe-area-inset-bottom,0px))] flex items-center justify-around"
+              aria-label={lang === "ar" ? "التنقل على الهاتف" : "Mobile navigation"}
+              className="sm:hidden fixed bottom-0 inset-x-0 z-30 bg-paper border-t-2 border-line px-2 pt-1.5 pb-[calc(0.4rem+env(safe-area-inset-bottom,0px))] flex items-center justify-around"
             >
               <button
                 type="button"
                 onClick={() => setView("explore")}
-                className={`flex flex-col items-center justify-center gap-1 py-1 px-4 rounded-xl text-[11px] font-semibold transition-colors ${
-                  view === "explore" ? "text-indigo-300" : "text-slate-400 hover:text-slate-200"
+                className={`flex flex-col items-center justify-center gap-0.5 py-1 px-4 text-[11px] font-extrabold ${
+                  view === "explore" ? "bg-brandYellow border border-line" : "text-ink"
                 }`}
               >
-                <Icon name="compass" className="w-5 h-5" />
-                <span>Explore</span>
+                <Icon name="search" className="w-4 h-4" />
+                <span>{lang === "ar" ? "استكشف" : "Explore"}</span>
               </button>
 
               <button
@@ -1751,41 +1904,40 @@
                     setShowCreateModal(true);
                   }
                 }}
-                className="flex flex-col items-center justify-center gap-1 py-1 px-4 rounded-xl text-[11px] font-semibold text-white"
+                className="flex flex-col items-center justify-center gap-0.5 py-1 px-4 bg-brandBlue text-white border border-line text-[11px] font-extrabold"
               >
-                <span className="w-9 h-7 rounded-lg bg-gradient-to-r from-indigo-500 to-violet-600 flex items-center justify-center shadow-md shadow-indigo-600/30">
-                  <Icon name="plus" className="w-4 h-4 text-white" />
-                </span>
-                <span className="text-indigo-200">Create</span>
+                <Icon name="plus" className="w-4 h-4" />
+                <span>{lang === "ar" ? "إنشاء وكيل" : "Create"}</span>
               </button>
 
               <button
                 type="button"
                 onClick={openProfile}
-                className={`flex flex-col items-center justify-center gap-1 py-1 px-4 rounded-xl text-[11px] font-semibold transition-colors ${
-                  view === "profile" ? "text-indigo-300" : "text-slate-400 hover:text-slate-200"
+                className={`flex flex-col items-center justify-center gap-0.5 py-1 px-4 text-[11px] font-extrabold ${
+                  view === "profile" ? "bg-brandYellow border border-line" : "text-ink"
                 }`}
               >
-                <Icon name="user" className="w-5 h-5" />
-                <span>{user ? "Profile" : "Sign In"}</span>
+                <Icon name="user" className="w-4 h-4" />
+                <span>{lang === "ar" ? (user ? "حسابي" : "دخول") : (user ? "Profile" : "Sign in")}</span>
               </button>
             </nav>
           )}
 
           {/* ========================================== */}
-          {/* MODAL 1: AUTH (LOGIN / REGISTER)           */}
+          {/* MODAL 1: SPLIT-SCREEN AUTH (image_1e78fb.jpg) */}
           {/* ========================================== */}
           {showAuthModal && (
             <AuthModal
               mode={authMode}
               setMode={setAuthMode}
+              lang={lang}
               onClose={() => setShowAuthModal(false)}
               onSuccess={(newToken, userData) => {
                 localStorage.setItem("agenttube_token", newToken);
                 setToken(newToken);
                 setUser(userData);
                 setShowAuthModal(false);
-                notify(`Welcome, ${userData.displayName}!`, "success");
+                notify(lang === "ar" ? `أهلاً بك، ${userData.displayName}!` : `Welcome, ${userData.displayName}!`, "success");
               }}
               apiFetch={apiFetch}
               notify={notify}
@@ -1797,10 +1949,11 @@
           {/* ========================================== */}
           {showCreateModal && (
             <CreateAgentModal
+              lang={lang}
               onClose={() => setShowCreateModal(false)}
               onCreated={(newAgent) => {
                 setShowCreateModal(false);
-                notify("Agent engineered & published!", "success");
+                notify(lang === "ar" ? "تم بناء ونشر الوكيل بنجاح!" : "Agent created and published!", "success");
                 fetchAgents();
                 openAgentWorkspace(newAgent.slug);
               }}
@@ -1808,205 +1961,190 @@
               notify={notify}
             />
           )}
+
+          {/* ========================================== */}
+          {/* MODAL 3: AGENT SAVED MEMORY INSPECTOR      */}
+          {/* ========================================== */}
+          {showMemoryModal && activeAgent && (
+            <div
+              onClick={(e) => { if (e.target === e.currentTarget) setShowMemoryModal(false); }}
+              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 glass-backdrop"
+            >
+              <div className="nb-box-lg animate-pop w-full max-w-lg p-6 bg-paper">
+                <div className="flex items-center justify-between pb-3 mb-4 border-b-2 border-line">
+                  <div className="flex items-center gap-2">
+                    <span className="p-1.5 bg-brandYellow border border-line">
+                      <Icon name="brain" className="w-4 h-4" />
+                    </span>
+                    <h3 className="font-extrabold text-base text-ink">{lang === "ar" ? "ذاكرة تقدمك مع" : "Progress memory for"} <bdi>{activeAgent.name}</bdi></h3>
+                  </div>
+                  <button onClick={() => setShowMemoryModal(false)} className="p-1 bg-paper border border-line">
+                    <Icon name="close" className="w-4 h-4" />
+                  </button>
+                </div>
+
+                <div className="nb-box p-4 text-xs sm:text-sm font-semibold text-ink whitespace-pre-wrap max-h-64 overflow-y-auto leading-relaxed" dir="auto">
+                  {agentMemory || (lang === "ar" ? "لا يوجد ملخص تقدم محفوظ بعد. ابدأ التحدث مع الوكيل وسيتم حفظ مستواك تلقائياً." : "No saved progress yet. Start chatting and this agent will remember your progress.")}
+                </div>
+
+                <div className="flex items-center justify-between gap-3 mt-5">
+                  {agentMemory ? (
+                    <button
+                      type="button"
+                      onClick={handleClearAgentMemory}
+                      className="nb-btn px-4 py-2 bg-rose-500 text-white text-xs font-extrabold"
+                    >
+                      {lang === "ar" ? "تصفير الذاكرة والبدء من الصفر" : "Clear memory and start over"}
+                    </button>
+                  ) : <span />}
+                  <button
+                    type="button"
+                    onClick={() => setShowMemoryModal(false)}
+                    className="nb-btn px-5 py-2 bg-brandYellow text-ink text-xs font-extrabold"
+                  >
+                    {lang === "ar" ? "إغلاق" : "Close"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       );
     }
 
     // ==========================================
-    // Profile Page Component
+    // Profile Page Component (Neo-Brutalist Style)
     // ==========================================
-    function ProfilePage({ user, agents, loading, error, onExplore, onCreate, onOpenAgent, onRefresh }) {
+    function ProfilePage({ user, lang, agents, loading, error, onExplore, onCreate, onOpenAgent, onRefresh }) {
       const [filter, setFilter] = useState("");
-      const name = user.displayName || user.username || "Creator";
-      const username = user.username ? `@${user.username}` : "AgentTube creator";
-      const initial = name.charAt(0).toUpperCase();
+      const name = user.displayName || user.username || (lang === "ar" ? "مبدع" : "Creator");
       const totalViews = agents.reduce((sum, agent) => sum + (Number(agent.viewsCount) || 0), 0);
-      const memberDate = user.createdAt && !Number.isNaN(Date.parse(user.createdAt))
-        ? new Date(user.createdAt).toLocaleDateString("en-US", { month: "long", year: "numeric" })
-        : null;
       const visibleAgents = agents.filter((agent) =>
         `${agent.name || ""} ${agent.description || ""} ${agent.category || ""}`
           .toLowerCase().includes(filter.toLowerCase().trim())
       );
 
       return (
-        <main className="w-full max-w-7xl mx-auto flex-1 px-4 sm:px-6 py-6 sm:py-9">
-          <div className="flex items-center gap-2 text-xs sm:text-sm text-slate-500 mb-5">
-            <button onClick={onExplore} className="hover:text-indigo-300 transition-colors">Explore</button>
-            <span className="text-slate-700">/</span>
-            <span className="text-slate-200 font-medium">My Profile</span>
-          </div>
-
-          <section className="profile-shell rounded-3xl sm:rounded-[28px] overflow-hidden">
-            <div className="profile-cover h-32 sm:h-44 px-5 sm:px-9 pt-5 sm:pt-7">
-              <div className="inline-flex relative z-10 items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-indigo-100 border border-white/15 text-[11px] font-semibold tracking-wide">
-                <Icon name="sparkles" className="w-3.5 h-3.5" /> CREATOR STUDIO
+        <main className="w-full max-w-7xl mx-auto flex-1 px-4 sm:px-6 py-8">
+          {/* Profile Header Card */}
+          <section className="nb-box-lg overflow-hidden mb-8">
+            <div className="h-28 sm:h-36 bg-darkPanel px-6 pt-5 flex items-start justify-between">
+              <span className="px-3 py-1 bg-brandYellow border border-line text-ink text-xs font-extrabold">
+                {lang === "ar" ? "ملف صانع الوكلاء" : "Creator Profile"}
+              </span>
+              <div className="flex gap-2">
+                <button onClick={onExplore} className="nb-btn px-3.5 py-1.5 bg-paper text-ink text-xs font-extrabold">
+                  {lang === "ar" ? "المنصة" : "Explore"}
+                </button>
+                <button onClick={onCreate} className="nb-btn px-3.5 py-1.5 bg-brandBlue text-white text-xs font-extrabold flex items-center gap-1">
+                  <Icon name="plus" className="w-3.5 h-3.5" /> {lang === "ar" ? "وكيل جديد" : "New agent"}
+                </button>
               </div>
             </div>
-            <div className="px-5 sm:px-9 pb-7 sm:pb-9">
-              <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4">
-                <div className="relative -mt-11 sm:-mt-14 z-10 flex-shrink-0">
-                  <div className="profile-avatar flex items-center justify-center text-white text-3xl sm:text-4xl font-bold">
-                    {user.avatarUrl ? <img src={user.avatarUrl} alt={`${name}'s avatar`} className="w-full h-full object-cover" /> : <span>{initial}</span>}
+
+            <div className="px-6 pb-7 bg-paper">
+              <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 -mt-12 mb-5">
+                <div className="flex items-end gap-4">
+                  <img
+                    src={user.avatarUrl}
+                    alt={name}
+                    className="w-24 h-24 bg-brandYellow border-2 border-line shadow-sm object-cover"
+                  />
+                  <div className="pb-1">
+                    <h1 className="text-2xl sm:text-3xl font-extrabold text-ink" dir="auto">{name}</h1>
+                    <p className="text-sm font-bold text-brandBlue" dir="ltr">@{user.username}</p>
                   </div>
-                  <span className="absolute -right-1.5 bottom-1 w-5 h-5 rounded-full border-4 border-[#131C31] bg-emerald-400" title="Active account" />
-                </div>
-                <div className="flex flex-wrap items-center gap-2 sm:pb-1">
-                  <button onClick={onExplore} className="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold border border-slate-700 text-slate-300 hover:bg-white/5 transition-colors">
-                    Explore Hub
-                  </button>
-                  <button onClick={onCreate} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs sm:text-sm font-semibold shadow-lg shadow-indigo-950/40 transition-colors">
-                    <Icon name="plus" className="w-4 h-4" /> Create Agent
-                  </button>
                 </div>
               </div>
 
-              <div className="mt-4 max-w-2xl min-w-0">
-                <div className="flex flex-wrap items-center gap-2.5">
-                  <h1 className="text-2xl sm:text-[30px] font-extrabold text-white tracking-tight break-words" dir="auto">{name}</h1>
-                  <span className="text-[10px] sm:text-[11px] font-semibold rounded-full bg-indigo-500/15 text-indigo-300 border border-indigo-500/25 px-2.5 py-0.5">Creator</span>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 border-t-2 border-line">
+                <div className="nb-box-sm p-4 bg-cream">
+                  <div className="text-2xl font-extrabold text-ink">{loading ? "—" : agents.length}</div>
+                  <p className="text-xs font-bold text-neutral-600">{lang === "ar" ? "وكلاء منشورون" : "Published agents"}</p>
                 </div>
-                <p className="text-sm font-medium text-indigo-300 mt-1" dir="auto">{username}</p>
-                <p className="text-sm text-slate-400 leading-relaxed mt-3 max-w-xl whitespace-pre-wrap" dir="auto">
-                  {user.bio || "Building intelligent AI agents on AgentTube."}
-                </p>
-                {memberDate && (
-                  <div className="flex items-center gap-2 text-xs text-slate-500 mt-3.5">
-                    <Icon name="calendar" className="w-4 h-4" /> Joined {memberDate}
-                  </div>
-                )}
-              </div>
-
-              <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mt-7">
-                <div className="profile-stat rounded-2xl p-4 sm:p-5">
-                  <span className="inline-flex items-center justify-center w-9 h-9 rounded-xl bg-indigo-500/15 text-indigo-300 mb-3"><Icon name="grid" className="w-5 h-5" /></span>
-                  <div className="text-2xl font-bold text-white tabular-nums">{loading || error ? "—" : agents.length}</div>
-                  <p className="text-xs text-slate-400 mt-1">Published agents</p>
+                <div className="nb-box-sm p-4 bg-cream">
+                  <div className="text-2xl font-extrabold text-ink">{loading ? "—" : totalViews.toLocaleString("en-US")}</div>
+                  <p className="text-xs font-bold text-neutral-600">{lang === "ar" ? "إجمالي المشاهدات" : "Total views"}</p>
                 </div>
-                <div className="profile-stat rounded-2xl p-4 sm:p-5">
-                  <span className="inline-flex items-center justify-center w-9 h-9 rounded-xl bg-sky-500/15 text-sky-300 mb-3"><Icon name="eye" className="w-5 h-5" /></span>
-                  <div className="text-2xl font-bold text-white tabular-nums">{loading || error ? "—" : totalViews.toLocaleString("en-US")}</div>
-                  <p className="text-xs text-slate-400 mt-1">Total views</p>
-                </div>
-                <div className="profile-stat rounded-2xl p-4 sm:p-5 col-span-2 lg:col-span-1">
-                  <span className="inline-flex items-center justify-center w-9 h-9 rounded-xl bg-fuchsia-500/15 text-fuchsia-300 mb-3"><Icon name="user" className="w-5 h-5" /></span>
-                  <div className="text-lg font-bold text-white truncate">{user.username ? `@${user.username}` : name}</div>
-                  <p className="text-xs text-slate-400 mt-1">Creator handle</p>
+                <div className="nb-box-sm p-4 bg-cream">
+                  <div className="text-sm font-extrabold text-ink truncate" dir="ltr">{user.email}</div>
+                  <p className="text-xs font-bold text-neutral-600">{lang === "ar" ? "البريد الإلكتروني" : "Email"}</p>
                 </div>
               </div>
             </div>
           </section>
 
-          <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_300px] gap-5 sm:gap-6 mt-7">
-            <section className="min-w-0">
-              <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-                <div>
-                  <h2 className="text-lg sm:text-xl font-bold text-white">My Agents</h2>
-                  <p className="text-xs sm:text-sm text-slate-400 mt-0.5">AI agents published from your account</p>
-                </div>
-                <button onClick={onRefresh} disabled={loading} className="inline-flex items-center gap-2 text-xs font-medium rounded-xl px-3.5 py-2 border border-slate-700/80 bg-bgCard text-slate-300 hover:text-white hover:bg-bgElevated disabled:opacity-50 transition-colors">
-                  <Icon name="refresh" className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} /> Refresh
-                </button>
-              </div>
-
-              {!loading && !error && agents.length > 0 && (
-                <div className="relative mb-4">
-                  <Icon name="search" className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
-                  <input value={filter} onChange={(e) => setFilter(e.target.value)} placeholder="Search your agents..." aria-label="Search your agents" className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-800 bg-bgCard focus:outline-none focus:ring-2 focus:ring-indigo-500/25 focus:border-indigo-500/60 text-sm text-white placeholder:text-slate-500" />
-                </div>
-              )}
-
-              {loading ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4" aria-label="Loading agents">
-                  {[1, 2, 3, 4].map((item) => <div key={item} className="rounded-2xl h-44 animate-pulse bg-bgCard/70 border border-slate-800" />)}
-                </div>
-              ) : error ? (
-                <div className="profile-info-card rounded-2xl px-5 py-12 text-center">
-                  <p className="text-slate-200 text-sm font-semibold">Could not load your agents</p>
-                  <p className="text-slate-400 text-xs mt-2 break-words">{error}</p>
-                  <button onClick={onRefresh} className="mt-4 text-sm font-semibold text-indigo-400 hover:text-indigo-300">Try again</button>
-                </div>
-              ) : visibleAgents.length === 0 ? (
-                <div className="profile-info-card rounded-2xl px-6 py-12 text-center">
-                  <div className="w-14 h-14 mx-auto flex items-center justify-center rounded-2xl bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 mb-4"><Icon name="sparkles" className="w-6 h-6" /></div>
-                  <h3 className="text-base font-bold text-white">{filter ? "No matching agents" : "No published agents yet"}</h3>
-                  <p className="text-sm text-slate-400 max-w-sm mx-auto mt-2 leading-relaxed">
-                    {filter ? "Try a different search term." : "Create your first AI agent and it will appear right here."}
-                  </p>
-                  {!filter && (
-                    <button onClick={onCreate} className="mt-5 inline-flex items-center gap-2 text-sm font-semibold rounded-xl px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white transition-colors">
-                      <Icon name="plus" className="w-4 h-4" /> Create your first agent
-                    </button>
-                  )}
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {visibleAgents.map((agent) => (
-                    <button key={agent._id || agent.slug} type="button" onClick={() => onOpenAgent(agent.slug)} className="agent-card text-left rounded-2xl p-5 group flex flex-col justify-between min-h-[176px] w-full hover:-translate-y-1">
-                      <div>
-                        <div className="flex items-center gap-3 mb-3">
-                          {agent.avatarUrl ? (
-                            <img src={agent.avatarUrl} alt="" className="w-11 h-11 object-cover rounded-xl border border-indigo-300/20" />
-                          ) : (
-                            <div className="w-11 h-11 flex items-center justify-center rounded-xl bg-indigo-500/20 text-indigo-300"><Icon name="sparkles" className="w-5 h-5" /></div>
-                          )}
-                          <div className="flex-1 min-w-0">
-                            <h3 className="font-bold text-slate-100 group-hover:text-indigo-300 truncate text-sm" dir="auto">{agent.name}</h3>
-                            <span className="text-[11px] text-indigo-300/80">{agent.category || "General"}</span>
-                          </div>
-                          <Icon name="arrow" className="w-4 h-4 text-slate-500 group-hover:text-indigo-300 group-hover:translate-x-0.5 transition-all" />
-                        </div>
-                        <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed" dir="auto">{agent.description || "Explore this AI agent"}</p>
-                      </div>
-                      <div className="flex items-center justify-between pt-3 mt-4 border-t border-slate-800/80 text-[11px] text-slate-400">
-                        <span className="inline-flex gap-1.5 items-center"><Icon name="eye" className="w-3.5 h-3.5 text-slate-500" /> {(Number(agent.viewsCount) || 0).toLocaleString("en-US")} views</span>
-                        <span className="font-semibold text-indigo-300 group-hover:text-indigo-200">Open Workspace</span>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </section>
-
-            <aside className="profile-info-card rounded-2xl p-5 sm:p-6 self-start">
-              <div className="flex items-center gap-2.5 mb-5">
-                <div className="w-9 h-9 flex items-center justify-center rounded-xl bg-indigo-500/15 text-indigo-300"><Icon name="user" className="w-5 h-5" /></div>
-                <h2 className="font-bold text-white text-base">Account Details</h2>
-              </div>
-              <div className="space-y-4">
-                <div>
-                  <p className="text-[11px] text-slate-500 font-semibold uppercase tracking-wider mb-1">Display name</p>
-                  <p className="text-sm text-slate-200 break-words" dir="auto">{name}</p>
-                </div>
-                {user.username && (
-                  <div>
-                    <p className="text-[11px] text-slate-500 font-semibold uppercase tracking-wider mb-1">Username</p>
-                    <p className="text-sm text-slate-200 break-all" dir="auto">@{user.username}</p>
-                  </div>
-                )}
-                {user.email && (
-                  <div>
-                    <div className="flex items-center gap-1.5 mb-1"><Icon name="mail" className="w-3.5 h-3.5 text-slate-500" /><p className="text-[11px] text-slate-500 font-semibold uppercase tracking-wider">Email · Private</p></div>
-                    <p className="text-sm text-slate-200 break-all" dir="auto">{user.email}</p>
-                  </div>
-                )}
-                {memberDate && (
-                  <div>
-                    <div className="flex items-center gap-1.5 mb-1"><Icon name="calendar" className="w-3.5 h-3.5 text-slate-500" /><p className="text-[11px] text-slate-500 font-semibold uppercase tracking-wider">Member since</p></div>
-                    <p className="text-sm text-slate-200">{memberDate}</p>
-                  </div>
-                )}
-              </div>
-            </aside>
+          {/* User's Published Agents */}
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
+            <h2 className="text-xl sm:text-2xl font-extrabold text-ink">{lang === "ar" ? "وكلائي المنشورون" : "My published agents"}</h2>
+            <button onClick={onRefresh} disabled={loading} className="nb-btn px-3.5 py-1.5 bg-paper text-xs font-extrabold inline-flex items-center gap-1.5">
+              <Icon name="refresh" className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} /> {lang === "ar" ? "تحديث" : "Refresh"}
+            </button>
           </div>
+
+          {!loading && !error && agents.length > 0 && (
+            <div className="mb-5 max-w-md">
+              <input
+                value={filter}
+                onChange={(e) => setFilter(e.target.value)}
+                placeholder={lang === "ar" ? "ابحث في وكلائك..." : "Search your agents..."}
+                className="nb-input w-full px-4 py-2.5 text-sm font-bold"
+              />
+            </div>
+          )}
+
+          {loading ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              {[1, 2, 3].map((i) => <div key={i} className="nb-box h-48 animate-pulse" />)}
+            </div>
+          ) : error ? (
+            <div className="nb-box p-8 text-center">
+              <p className="font-bold text-rose-600 mb-3">{error}</p>
+              <button onClick={onRefresh} className="nb-btn px-4 py-2 bg-brandYellow text-xs font-extrabold">{lang === "ar" ? "إعادة المحاولة" : "Try again"}</button>
+            </div>
+          ) : visibleAgents.length === 0 ? (
+            <div className="nb-box p-10 text-center">
+              <h3 className="text-lg font-extrabold text-ink mb-2">{lang === "ar" ? "لا يوجد وكلاء منشورون بعد" : "No agents published yet"}</h3>
+              <p className="text-sm font-semibold text-neutral-600 mb-5">{lang === "ar" ? "ابدأ ببناء أول وكيل ذكي مخصص لك الآن." : "Create your first custom AI agent."}</p>
+              <button onClick={onCreate} className="nb-btn px-5 py-2.5 bg-brandBlue text-white text-sm font-extrabold inline-flex items-center gap-2">
+                <Icon name="plus" className="w-4 h-4" /> {lang === "ar" ? "إنشاء أول وكيل" : "Create your first agent"}
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              {visibleAgents.map((agent) => (
+                <button
+                  key={agent._id || agent.slug}
+                  type="button"
+                  onClick={() => onOpenAgent(agent.slug)}
+                  className="nb-card text-start p-5 flex flex-col justify-between"
+                >
+                  <div>
+                    <div className="flex items-center gap-3 mb-3">
+                      <img src={agent.avatarUrl} alt="" className="w-12 h-12 border-2 border-line bg-cream" />
+                      <div className="min-w-0 flex-1">
+                        <h3 className="font-extrabold text-base text-ink truncate" dir="auto">{agent.name}</h3>
+                        <span className="px-2 py-0.5 bg-brandYellow border border-line text-[10px] font-extrabold">{agent.category}</span>
+                      </div>
+                    </div>
+                    <p className="text-xs font-semibold text-neutral-700 line-clamp-2 mb-4" dir="auto">{agent.description}</p>
+                  </div>
+                  <div className="pt-3 border-t-2 border-line w-full flex items-center justify-between text-xs font-extrabold">
+                    <span>👁 {agent.viewsCount || 0} {lang === "ar" ? "مشاهدة" : "views"}</span>
+                    <span className="text-brandBlue">{lang === "ar" ? "فتح مساحة العمل" : "Open workspace"}</span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
         </main>
       );
     }
 
     // ==========================================
-    // Auth Modal Component
+    // Split-Screen Auth Modal (Matching image_1e78fb.jpg)
     // ==========================================
-    function AuthModal({ mode, setMode, onClose, onSuccess, apiFetch, notify }) {
+    function AuthModal({ mode, setMode, lang, onClose, onSuccess, apiFetch, notify }) {
       const [form, setForm] = useState({
         username: "",
         displayName: "",
@@ -2042,101 +2180,167 @@
       return (
         <div
           onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm overflow-y-auto"
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/60 glass-backdrop overflow-y-auto"
         >
-          <div className="modal-shell modal-enter w-full max-w-md rounded-3xl p-5 sm:p-7 my-auto flex-shrink-0">
-            <div className="flex items-center justify-between mb-5">
-              <div>
-                <h2 className="text-lg font-bold text-white">
-                  {mode === "login" ? "Welcome Back" : "Create Creator Account"}
-                </h2>
-                <p className="text-xs text-slate-400 mt-0.5">
-                  {mode === "login" ? "Sign in to chat and build AI agents" : "Join AgentTube AI Studio"}
-                </p>
+          {/* Split-Screen Box matching image_1e78fb.jpg */}
+          <div className="nb-box-lg animate-pop w-full max-w-4xl grid grid-cols-1 lg:grid-cols-2 overflow-hidden my-auto">
+            {/* Form Side (Warm Cream #F6F5F0) */}
+            <div className="bg-paper p-6 sm:p-9 flex flex-col justify-between">
+              <div className="flex items-center justify-between mb-6">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="nb-btn px-3 py-1 bg-paper text-xs font-extrabold text-ink inline-flex items-center gap-1"
+                >
+                  <Icon name="close" className="w-3.5 h-3.5" />
+                  <span>{lang === "ar" ? "إغلاق" : "Close"}</span>
+                </button>
+                <span className="px-2.5 py-0.5 bg-brandYellow border border-line text-xs font-extrabold">
+                  AgentTube
+                </span>
               </div>
-              <button onClick={onClose} className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors">
-                <Icon name="close" className="w-5 h-5" />
-              </button>
+
+              <div>
+                <h2 className="text-2xl sm:text-3xl font-extrabold text-ink text-center mb-1.5">
+                  {mode === "login" ? (lang === "ar" ? "سجّل الدخول لحسابك" : "Welcome back") : (lang === "ar" ? "أنشئ حسابك" : "Create your account")}
+                </h2>
+                <p className="text-xs sm:text-sm font-semibold text-neutral-600 text-center mb-6">
+                  {mode === "login"
+                    ? (lang === "ar" ? "أكمل بناء وكلائك واسترجع تقدمك المحفوظ في الدروس." : "Keep building agents and pick up where you left off.")
+                    : (lang === "ar" ? "ابنِ وكلاء ذكاء اصطناعي بالعربي وشاركهم مع المجتمع." : "Build AI agents and share them with the community.")}
+                </p>
+
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  {mode === "register" && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-extrabold text-ink mb-1">{lang === "ar" ? "اسم المستخدم (Username)" : "Username"}</label>
+                        <input
+                          type="text"
+                          required
+                          dir="ltr"
+                          placeholder="ahmed_ai"
+                          value={form.username}
+                          onChange={(e) => setForm({ ...form, username: e.target.value })}
+                          className="nb-input w-full px-3.5 py-2.5 text-sm font-bold"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-extrabold text-ink mb-1">{lang === "ar" ? "الاسم الكامل" : "Full name"}</label>
+                        <input
+                          type="text"
+                          required
+                          placeholder={lang === "ar" ? "أحمد محمد" : "Your full name"}
+                          dir="auto"
+                          value={form.displayName}
+                          onChange={(e) => setForm({ ...form, displayName: e.target.value })}
+                          className="nb-input w-full px-3.5 py-2.5 text-sm font-bold"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="block text-xs font-extrabold text-ink mb-1">{lang === "ar" ? "البريد الإلكتروني" : "Email address"}</label>
+                    <input
+                      type="email"
+                      required
+                      dir="ltr"
+                      placeholder="you@example.com"
+                      value={form.email}
+                      onChange={(e) => setForm({ ...form, email: e.target.value })}
+                      className="nb-input w-full px-3.5 py-2.5 text-sm font-bold"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-extrabold text-ink mb-1">{lang === "ar" ? "كلمة المرور" : "Password"}</label>
+                    <input
+                      type="password"
+                      required
+                      minLength={6}
+                      dir="ltr"
+                      placeholder="••••••••"
+                      value={form.password}
+                      onChange={(e) => setForm({ ...form, password: e.target.value })}
+                      className="nb-input w-full px-3.5 py-2.5 text-sm font-bold"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="nb-btn w-full py-3 bg-brandBlue hover:bg-brandBlueHover disabled:opacity-50 text-white font-extrabold text-sm mt-2"
+                  >
+                    {loading ? (lang === "ar" ? "جاري التنفيذ..." : "Please wait...") : mode === "login" ? (lang === "ar" ? "تسجيل الدخول" : "Sign in") : (lang === "ar" ? "إنشاء حساب" : "Create account")}
+                  </button>
+                </form>
+
+                <div className="mt-5 text-center text-xs font-bold text-neutral-700">
+                  {mode === "login" ? (
+                    <span>
+                      {lang === "ar" ? "ليس لديك حساب بعد؟" : "New to AgentTube?"}{" "}
+                      <button onClick={() => setMode("register")} className="text-brandBlue underline font-extrabold">
+                        {lang === "ar" ? "أنشئ حسابك الآن" : "Create an account"}
+                      </button>
+                    </span>
+                  ) : (
+                    <span>
+                      {lang === "ar" ? "لديك حساب بالفعل؟" : "Already have an account?"}{" "}
+                      <button onClick={() => setMode("login")} className="text-brandBlue underline font-extrabold">
+                        {lang === "ar" ? "تسجيل الدخول" : "Sign in"}
+                      </button>
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div className="mt-6 pt-3 border-t border-line text-center text-[11px] font-bold text-neutral-500">
+                AgentTube — Hybrid XML & Persistent Memory Engine
+              </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {mode === "register" && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-medium text-slate-300 mb-1.5">Username</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="ahmed_ai"
-                      value={form.username}
-                      onChange={(e) => setForm({ ...form, username: e.target.value })}
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-bgSurface border border-slate-700/80 text-sm text-white focus:outline-none focus:border-indigo-500"
-                    />
+            {/* Dark Showcase Side (Matching Right Black Panel of image_1e78fb.jpg) */}
+            <div className="hidden lg:flex flex-col justify-between bg-darkPanel text-white p-9 border-r-2 border-line">
+              <div>
+                <h3 className="text-3xl font-extrabold leading-tight mb-3">
+                  {lang === "ar" ? "ابنِ وكلاء يشتغلوا فعلاً." : "Create AI agents that really work."}
+                </h3>
+                <p className="text-sm font-semibold text-neutral-300 leading-relaxed">
+                  {lang === "ar" ? "هندسة أوامر احترافية، ذاكرة تحفظ مستواك عبر كل المحادثات، ومجتمع لصناع الذكاء الاصطناعي العرب." : "Thoughtful prompt design, memory across conversations, and a creative community."}
+                </p>
+              </div>
+
+              {/* Architectural Production Diagram Card matching image_1e78fb.jpg */}
+              <div className="bg-paper text-ink border-2 border-white p-5 shadow-sm">
+                <div className="flex items-center justify-between border-b-2 border-line pb-3 mb-4">
+                  <div className="flex gap-1.5">
+                    <span className="w-3 h-3 bg-rose-500 border border-line" />
+                    <span className="w-3 h-3 bg-brandYellow border border-line" />
+                    <span className="w-3 h-3 bg-emerald-500 border border-line" />
                   </div>
-                  <div>
-                    <label className="block text-xs font-medium text-slate-300 mb-1.5">Display Name</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="Ahmed"
-                      value={form.displayName}
-                      onChange={(e) => setForm({ ...form, displayName: e.target.value })}
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-bgSurface border border-slate-700/80 text-sm text-white focus:outline-none focus:border-indigo-500"
-                    />
+                  <span className="px-2 py-0.5 bg-sageMist border border-line text-[10px] font-extrabold">
+                    Production ✓
+                  </span>
+                </div>
+
+                <div className="space-y-3 text-xs font-extrabold">
+                  <div className="p-3 bg-cream border-2 border-line flex items-center justify-between">
+                    <span>{lang === "ar" ? "01. فكرتك بالعربي" : "01. Your idea"}</span>
+                    <span className="px-2 py-0.5 bg-brandYellow border border-line">RAW PROMPT</span>
+                  </div>
+                  <div className="text-center font-extrabold">↓</div>
+                  <div className="p-3 bg-brandBlue text-white border-2 border-line flex items-center justify-between">
+                    <span>{lang === "ar" ? "02. مهندس الأوامر" : "02. Prompt Architect"}</span>
+                    <span className="px-2 py-0.5 bg-darkPanel text-brandYellow">HYBRID XML</span>
+                  </div>
+                  <div className="text-center font-extrabold">↓</div>
+                  <div className="p-3 bg-brandYellow border-2 border-line flex items-center justify-between">
+                    <span>{lang === "ar" ? "03. ذاكرة ومشاركة الوكلاء" : "03. Memory & Agent Sharing"}</span>
+                    <span className="px-2 py-0.5 bg-paper border border-line">READY</span>
                   </div>
                 </div>
-              )}
-
-              <div>
-                <label className="block text-xs font-medium text-slate-300 mb-1.5">Email Address</label>
-                <input
-                  type="email"
-                  required
-                  placeholder="you@example.com"
-                  value={form.email}
-                  onChange={(e) => setForm({ ...form, email: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-bgSurface border border-slate-700/80 text-sm text-white focus:outline-none focus:border-indigo-500"
-                />
               </div>
-
-              <div>
-                <label className="block text-xs font-medium text-slate-300 mb-1.5">Password</label>
-                <input
-                  type="password"
-                  required
-                  minLength={6}
-                  placeholder="••••••••"
-                  value={form.password}
-                  onChange={(e) => setForm({ ...form, password: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-bgSurface border border-slate-700/80 text-sm text-white focus:outline-none focus:border-indigo-500"
-                />
-              </div>
-
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 disabled:opacity-50 text-white font-semibold text-sm shadow-lg shadow-indigo-600/25 transition-all"
-              >
-                {loading ? "Please wait..." : mode === "login" ? "Sign In" : "Create Account"}
-              </button>
-            </form>
-
-            <div className="mt-5 text-center text-xs text-slate-400">
-              {mode === "login" ? (
-                <span>
-                  Don't have an account?{" "}
-                  <button onClick={() => setMode("register")} className="text-indigo-400 hover:underline font-semibold">
-                    Register
-                  </button>
-                </span>
-              ) : (
-                <span>
-                  Already have an account?{" "}
-                  <button onClick={() => setMode("login")} className="text-indigo-400 hover:underline font-semibold">
-                    Sign In
-                  </button>
-                </span>
-              )}
             </div>
           </div>
         </div>
@@ -2144,18 +2348,17 @@
     }
 
     // ==========================================
-    // Create Agent Modal Component
+    // Create Agent Modal (Neo-Brutalist Style)
     // ==========================================
-    function CreateAgentModal({ onClose, onCreated, apiFetch, notify }) {
+    function CreateAgentModal({ lang, onClose, onCreated, apiFetch, notify }) {
       const [form, setForm] = useState({
         name: "",
         description: "",
-        category: "General",
+        category: "Education",
         rawPrompt: "",
         starter1: "",
         starter2: "",
-        temperature: 0.5,
-        enableWebSearch: false,
+        temperature: 0.4,
         isPublic: true,
       });
       const [loading, setLoading] = useState(false);
@@ -2182,7 +2385,7 @@
               category: form.category,
               rawPrompt: form.rawPrompt,
               temperature: Number(form.temperature),
-              enableWebSearch: form.enableWebSearch,
+              enableWebSearch: false,
               isPublic: form.isPublic,
               starterPrompts,
             }),
@@ -2198,163 +2401,136 @@
       return (
         <div
           onClick={(e) => { if (e.target === e.currentTarget && !loading) onClose(); }}
-          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-sm overflow-y-auto"
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 glass-backdrop overflow-y-auto"
         >
-          <div className="modal-shell modal-enter w-full max-w-xl rounded-3xl p-5 sm:p-7 my-auto max-h-[92dvh] overflow-y-auto flex-shrink-0">
-            <div className="flex items-center justify-between mb-5">
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="w-9 h-9 flex-shrink-0 rounded-xl bg-indigo-500/20 border border-indigo-400/25 text-indigo-300 flex items-center justify-center">
+          <div className="nb-box-lg animate-pop w-full max-w-xl bg-paper p-5 sm:p-7 my-auto max-h-[92dvh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-4 mb-5 border-b-2 border-line">
+              <div className="flex items-center gap-2.5">
+                <span className="p-2 bg-brandYellow border-2 border-line shadow-sm">
                   <Icon name="sparkles" className="w-5 h-5" />
-                </div>
-                <div className="min-w-0">
-                  <h2 className="text-base sm:text-lg font-bold text-white">Create AI Agent</h2>
-                  <p className="text-xs text-slate-400 truncate">
-                    Auto-engineered into deterministic Hybrid XML
+                </span>
+                <div>
+                  <h2 className="text-lg sm:text-xl font-extrabold text-ink">{lang === "ar" ? "إنشاء وكيل ذكاء اصطناعي" : "Create an AI Agent"}</h2>
+                  <p className="text-xs font-bold text-neutral-600">
+                    {lang === "ar" ? "سيتم تحويل تعليماتك تلقائياً إلى Hybrid XML احترافي" : "Your instructions will be structured as professional Hybrid XML"}
                   </p>
                 </div>
               </div>
               <button
                 onClick={onClose}
                 disabled={loading}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
+                className="nb-btn p-1.5 bg-paper text-ink"
               >
-                <Icon name="close" className="w-5 h-5" />
+                <Icon name="close" className="w-4 h-4" />
               </button>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="sm:col-span-2">
-                  <label className="block text-xs font-medium text-slate-300 mb-1.5">Agent Name</label>
+                  <label className="block text-xs font-extrabold text-ink mb-1">{lang === "ar" ? "اسم الوكيل" : "Agent name"}</label>
                   <input
                     type="text"
                     required
                     dir="auto"
-                    placeholder="e.g. Senior Node.js Reviewer"
+                    placeholder={lang === "ar" ? "مثال: مدرس بايثون العربي" : "e.g. Python Tutor"}
                     value={form.name}
                     onChange={(e) => setForm({ ...form, name: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-bgSurface border border-slate-700/80 text-sm text-white focus:outline-none focus:border-indigo-500"
+                    className="nb-input w-full px-3.5 py-2.5 text-sm font-bold"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1.5">Category</label>
+                  <label className="block text-xs font-extrabold text-ink mb-1">{lang === "ar" ? "التصنيف" : "Category"}</label>
                   <select
                     value={form.category}
                     onChange={(e) => setForm({ ...form, category: e.target.value })}
-                    className="w-full px-3 py-2.5 rounded-xl bg-bgSurface border border-slate-700/80 text-sm text-white focus:outline-none focus:border-indigo-500"
+                    className="nb-input w-full px-3 py-2.5 text-sm font-bold"
                   >
-                    {CATEGORIES.filter((c) => c !== "All").map((cat) => (
-                      <option key={cat} value={cat}>{cat}</option>
+                    {CATEGORIES.filter((c) => c.id !== "All").map((cat) => (
+                      <option key={cat.id} value={cat.id}>{lang === "ar" ? cat.ar : cat.en}</option>
                     ))}
                   </select>
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-slate-300 mb-1.5">Short Description</label>
+                <label className="block text-xs font-extrabold text-ink mb-1">{lang === "ar" ? "وصف مختصر" : "Short description"}</label>
                 <input
                   type="text"
                   required
                   dir="auto"
-                  placeholder="What does this agent help users achieve?"
+                  placeholder={lang === "ar" ? "ماذا يقدم هذا الوكيل للمستخدم؟" : "What does your agent help people do?"}
                   value={form.description}
                   onChange={(e) => setForm({ ...form, description: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-bgSurface border border-slate-700/80 text-sm text-white focus:outline-none focus:border-indigo-500"
+                  className="nb-input w-full px-3.5 py-2.5 text-sm font-bold"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-slate-300 mb-1.5">
-                  Raw Prompt / Instructions (Arabic or English)
+                <label className="block text-xs font-extrabold text-ink mb-1">
+                  {lang === "ar" ? "التعليمات والفكرة (Raw Prompt — بالعربي أو الإنجليزي)" : "Instructions (Raw Prompt — Arabic or English)"}
                 </label>
                 <textarea
                   rows="4"
                   required
                   dir="auto"
-                  placeholder="Describe how the agent should behave, its expertise, rules, and desired response language..."
+                  placeholder={lang === "ar" ? "اشرح دور الوكيل، أسلوبه في الشرح أو العمل، والقواعد التي يجب أن يلتزم بها..." : "Describe the agent’s role, tone, goals and guidelines..."}
                   value={form.rawPrompt}
                   onChange={(e) => setForm({ ...form, rawPrompt: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-bgSurface border border-slate-700/80 text-sm text-white focus:outline-none focus:border-indigo-500 leading-relaxed"
+                  className="nb-input w-full px-3.5 py-2.5 text-sm font-bold leading-relaxed"
                 />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1.5">Starter Prompt 1 (Optional)</label>
+                  <label className="block text-xs font-extrabold text-ink mb-1">{lang === "ar" ? "سؤال مقترح 1 (اختياري)" : "Starter prompt 1 (optional)"}</label>
                   <input
                     type="text"
                     dir="auto"
-                    placeholder="e.g. Audit my Express API"
+                    placeholder={lang === "ar" ? "مثال: ابدأ معي من الصفر" : "e.g. Teach me from scratch"}
                     value={form.starter1}
                     onChange={(e) => setForm({ ...form, starter1: e.target.value })}
-                    className="w-full px-3.5 py-2 rounded-xl bg-bgSurface border border-slate-700/80 text-xs text-white focus:outline-none focus:border-indigo-500"
+                    className="nb-input w-full px-3 py-2 text-xs font-bold"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1.5">Starter Prompt 2 (Optional)</label>
+                  <label className="block text-xs font-extrabold text-ink mb-1">{lang === "ar" ? "سؤال مقترح 2 (اختياري)" : "Starter prompt 2 (optional)"}</label>
                   <input
                     type="text"
                     dir="auto"
-                    placeholder="e.g. Optimize MongoDB indexes"
+                    placeholder={lang === "ar" ? "مثال: اختبر مستواي وصمم لي خطة" : "e.g. Assess my level and make a plan"}
                     value={form.starter2}
                     onChange={(e) => setForm({ ...form, starter2: e.target.value })}
-                    className="w-full px-3.5 py-2 rounded-xl bg-bgSurface border border-slate-700/80 text-xs text-white focus:outline-none focus:border-indigo-500"
+                    className="nb-input w-full px-3 py-2 text-xs font-bold"
                   />
                 </div>
               </div>
 
-              {/* Capabilities & Settings Box */}
-              <div className="rounded-2xl bg-bgSurface/80 border border-slate-800 p-3.5 sm:p-4 space-y-4">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-start gap-2.5">
-                    <div className="w-8 h-8 rounded-lg bg-sky-500/15 text-sky-300 flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <Icon name="globe" className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <p className="text-xs font-semibold text-slate-200">Google Search Grounding</p>
-                      <p className="text-[11px] text-slate-400">Allow agent to fetch live information from the web</p>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    role="switch"
-                    aria-checked={form.enableWebSearch}
-                    onClick={() => setForm({ ...form, enableWebSearch: !form.enableWebSearch })}
-                    className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${
-                      form.enableWebSearch ? "bg-indigo-600" : "bg-slate-700"
-                    }`}
-                  >
-                    <span
-                      className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                        form.enableWebSearch ? "translate-x-5" : "translate-x-0"
-                      }`}
-                    />
-                  </button>
-                </div>
-
-                <div className="pt-3 border-t border-slate-800/80">
+              {/* Agent creativity settings */}
+              <div className="nb-box p-4">
+                <div>
                   <div className="flex items-center justify-between text-xs mb-2">
-                    <span className="font-medium text-slate-300">Creativity (Temperature)</span>
+                    <span className="font-extrabold text-ink">{lang === "ar" ? "درجة الإبداع (Temperature)" : "Creativity (Temperature)"}</span>
                     <div className="flex items-center gap-1.5">
                       {[
-                        { label: "Precise", val: 0.2 },
-                        { label: "Balanced", val: 0.5 },
-                        { label: "Creative", val: 1.0 },
+                        { label: lang === "ar" ? "دقيق" : "Precise", val: 0.2 },
+                        { label: lang === "ar" ? "متوازن" : "Balanced", val: 0.5 },
+                        { label: lang === "ar" ? "إبداعي" : "Creative", val: 1.0 },
                       ].map((preset) => (
                         <button
                           key={preset.label}
                           type="button"
                           onClick={() => setForm({ ...form, temperature: preset.val })}
-                          className={`px-2 py-0.5 rounded-md text-[10px] font-medium transition-colors ${
+                          className={`px-2 py-0.5 border border-line text-[10px] font-extrabold ${
                             Number(form.temperature) === preset.val
-                              ? "bg-indigo-500/25 text-indigo-300 border border-indigo-400/30"
-                              : "bg-slate-800 text-slate-400 hover:text-slate-200"
+                              ? "bg-brandYellow text-ink"
+                              : "bg-paper text-neutral-700"
                           }`}
                         >
                           {preset.label}
                         </button>
                       ))}
-                      <span className="text-indigo-400 font-mono font-semibold ml-1">{form.temperature}</span>
+                      <span className="font-mono font-extrabold text-brandBlue mr-1">{form.temperature}</span>
                     </div>
                   </div>
                   <input
@@ -2364,7 +2540,7 @@
                     step="0.1"
                     value={form.temperature}
                     onChange={(e) => setForm({ ...form, temperature: e.target.value })}
-                    className="w-full accent-indigo-500 cursor-pointer"
+                    className="w-full accent-ink cursor-pointer"
                   />
                 </div>
               </div>
@@ -2372,17 +2548,17 @@
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 disabled:opacity-50 text-white font-semibold text-sm shadow-lg shadow-indigo-600/25 transition-all flex items-center justify-center gap-2"
+                className="nb-btn w-full py-3 bg-brandBlue hover:bg-brandBlueHover disabled:opacity-50 text-white font-extrabold text-sm flex items-center justify-center gap-2"
               >
                 {loading ? (
                   <React.Fragment>
-                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    <span>AI Architect is engineering XML prompt...</span>
+                    <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                    <span>{lang === "ar" ? "جاري هندسة البرومبت ونشر الوكيل..." : "Building and publishing your agent..."}</span>
                   </React.Fragment>
                 ) : (
                   <React.Fragment>
                     <Icon name="sparkles" className="w-4 h-4" />
-                    <span>Optimize & Publish Agent</span>
+                    <span>{lang === "ar" ? "هندسة ونشر الوكيل" : "Build & publish agent"}</span>
                   </React.Fragment>
                 )}
               </button>
