@@ -39,6 +39,10 @@
     href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap"
     rel="stylesheet">
 
+  <!-- Beautiful mathematical notation (LaTeX / TeX), including Arabic + English mixed messages -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" />
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+
   <!-- Rich Markdown + HTML Sanitization + Syntax Highlighting -->
   <script defer src="https://cdn.jsdelivr.net/npm/marked@15.0.12/marked.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/dompurify@3.2.6/dist/purify.min.js"></script>
@@ -235,6 +239,45 @@
     .user-bubble .chat-rich a { color: #F7EACD; }
     .user-bubble .chat-rich :not(pre) > code { color: #FFFFFF; background: rgba(255, 255, 255, .17); border-color: rgba(255, 255, 255, .34); }
     .user-bubble .chat-rich li::marker { color: #E6EBD8; }
+    /* Mathematical notation: isolated LTR formulas inside comfortable RTL/English prose */
+    .chat-rich .math-inline {
+      display: inline-block; direction: ltr; unicode-bidi: isolate;
+      vertical-align: baseline; max-width: 100%;
+      font-family: 'KaTeX_Main', 'Times New Roman', serif;
+      line-height: 1.35;
+    }
+    .chat-rich .math-inline .katex { font-size: 1.06em; }
+    .chat-rich .math-block {
+      display: block; direction: ltr; unicode-bidi: isolate;
+      text-align: center !important;
+      max-width: 100%; overflow-x: auto; overflow-y: hidden;
+      -webkit-overflow-scrolling: touch;
+      margin: 1.05rem 0; padding: 1.05rem 1rem;
+      border: 1px solid var(--border-soft); border-radius: 13px;
+      background: #F6F7F3;
+      scrollbar-width: thin;
+      scrollbar-color: var(--shadow-default) transparent;
+      font-family: 'KaTeX_Main', 'Times New Roman', serif;
+    }
+    .chat-rich .math-block .katex-display { margin: 0; width: max-content; min-width: 100%; }
+    .chat-rich .math-block .katex { font-size: 1.15em; }
+    .chat-rich .math-fallback {
+      white-space: pre-wrap; overflow-wrap: anywhere;
+      font: .94em/1.6 'JetBrains Mono', monospace;
+    }
+    /* In user bubbles, keep formulas legible instead of forcing white-on-white text. */
+    .user-bubble .chat-rich .math-block {
+      background: #FDFCFA; border-color: #D8E3DF;
+      color: var(--text-slate-ink);
+    }
+    .user-bubble .chat-rich .math-inline { color: inherit; }
+    .user-bubble .chat-rich .math-block .katex { color: var(--text-slate-ink); }
+    .chat-rich :not(pre) > code { unicode-bidi: isolate; }
+    @media (max-width: 639px) {
+      .chat-rich .math-block { padding: .8rem .6rem; margin: .8rem 0; }
+      .chat-rich .math-block .katex { font-size: 1em; }
+    }
+
     .code-window {
       overflow: hidden; max-width: 100%; margin: 1rem 0;
       background: var(--code-bg); border: 1px solid #3D4A56;
@@ -510,24 +553,103 @@
       );
     }
 
-    function MarkdownPart({ source }) {
-      if (!source) return null;
+    // Preserve inline code before extracting math, so `$...$` in code is not rendered.
+    // Code fences are already isolated by FormattedMessage.
+    function extractMathExpressions(source) {
+      const codeSegments = [];
+      const mathSegments = [];
+      let prepared = source.replace(/(`+)([\s\S]*?)\1/g, (raw) => {
+        const key = `AGENTTUBECODESEGMENT${codeSegments.length}END`;
+        codeSegments.push(raw);
+        return key;
+      });
+
+      const addMath = (original, latex, display) => {
+        const key = `AGENTTUBEMATHSEGMENT${mathSegments.length}END`;
+        mathSegments.push({ key, original, latex, display });
+        return display ? `\n\n${key}\n\n` : key;
+      };
+
+      // Display formulas first: $$...$$ and \[...\] (both can span lines).
+      prepared = prepared.replace(/\\\[([\s\S]*?)\\\]/g,
+        (original, latex) => addMath(original, latex, true));
+      prepared = prepared.replace(/\$\$([\s\S]*?)\$\$/g,
+        (original, latex) => addMath(original, latex, true));
+      // Inline formulas: \(...\) and $...$.
+      prepared = prepared.replace(/\\\(([\s\S]*?)\\\)/g,
+        (original, latex) => addMath(original, latex, false));
+      prepared = prepared.replace(/(^|[^\$])\$([^\n$]+?)\$/g, (original, prefix, latex) => {
+        if (!latex.trim() || /^\s|\s$/.test(latex)) return original;
+        return prefix + addMath(original.slice(prefix.length), latex, false);
+      });
+      // Let marked continue rendering inline backtick content as code.
+      prepared = prepared.replace(/AGENTTUBECODESEGMENT(\d+)END/g,
+        (match, index) => codeSegments[Number(index)] ?? match);
+      return { prepared, mathSegments };
+    }
+
+    function mathToHtml(expression) {
+      const { latex, display, original } = expression;
+      if (!window.katex) {
+        return `<span class="math-fallback" dir="ltr">${escapeHtml(original)}</span>`;
+      }
+      try {
+        const result = window.katex.renderToString(latex.trim(), {
+          displayMode: display,
+          throwOnError: false,
+          trust: false,
+          strict: "ignore",
+          output: "htmlAndMathml",
+          maxExpand: 1000
+        });
+        return `<span class="${display ? "math-display-content" : "math-inline"}" dir="ltr">${result}</span>`;
+      } catch (error) {
+        return `<span class="math-fallback" dir="ltr">${escapeHtml(original)}</span>`;
+      }
+    }
+
+    function renderMarkdownWithMath(source) {
+      const { prepared, mathSegments } = extractMathExpressions(source);
       let html;
       if (window.marked && window.DOMPurify) {
         try {
           const renderer = new window.marked.Renderer();
           renderer.html = (token) => escapeHtml(typeof token === "string" ? token : token.text || "");
-          html = window.DOMPurify.sanitize(window.marked.parse(source, {
+          html = window.DOMPurify.sanitize(window.marked.parse(prepared, {
             gfm: true, breaks: true, renderer
           }));
           html = html.replace(/<table>/g, '<div class="table-scroll"><table>')
                      .replace(/<\/table>/g, '</table></div>');
-        } catch (e) { html = "<p>" + escapeHtml(source).replace(/\n/g, "<br>") + "</p>"; }
+        } catch (error) {
+          html = "<p>" + escapeHtml(prepared).replace(/\n/g, "<br>") + "</p>";
+        }
       } else {
-        html = "<p>" + escapeHtml(source).replace(/\n/g, "<br>") + "</p>";
+        html = "<p>" + escapeHtml(prepared).replace(/\n/g, "<br>") + "</p>";
       }
-      // Each block determines its own writing direction, not just the whole message.
-      html = html.replace(/<(p|li|h[1-6]|blockquote|th|td)(?=[\s>])/g, '<$1 dir="auto"');
+
+      // Generated KaTeX markup is inserted only AFTER untrusted Markdown is sanitized.
+      // The KaTeX renderer runs with trust:false to prevent unsafe commands/URLs.
+      for (const expression of mathSegments) {
+        const mathHtml = mathToHtml(expression);
+        if (expression.display) {
+          const wrapper = `<div class="math-block" dir="ltr">${mathHtml}</div>`;
+          const paragraph = new RegExp(`<p(?:\\s+[^>]*)?>\\s*${expression.key}\\s*</p>`, "g");
+          html = html.replace(paragraph, () => wrapper);
+          // If Markdown placed the marker in another block, still render it visibly.
+          html = html.split(expression.key).join(wrapper);
+        } else {
+          html = html.split(expression.key).join(mathHtml);
+        }
+      }
+      // Each prose block chooses its own direction; KaTeX itself remains LTR.
+      html = html.replace(/<(p|li|h[1-6]|blockquote|th|td)(?=[\s>])/g,
+        '<$1 dir="auto"');
+      return html;
+    }
+
+    function MarkdownPart({ source }) {
+      const html = React.useMemo(() => source ? renderMarkdownWithMath(source) : "", [source]);
+      if (!source) return null;
       return <div className="chat-rich" dir="auto" dangerouslySetInnerHTML={{ __html: html }} />;
     }
 
@@ -1786,7 +1908,7 @@
                           return (
                             <div
                               key={msg._id || i}
-                              dir="rtl" className={`flex gap-3 min-w-0 ${isUser ? "justify-start" : "justify-end"}`}
+                              dir={lang === "ar" ? "rtl" : "ltr"} className={`flex gap-3 min-w-0 ${isUser ? "justify-start" : "justify-end"}`}
                             >
                               {isUser && (
                                 <div className="w-8 h-8 flex-shrink-0 bg-brandYellow border-2 border-line shadow-sm flex items-center justify-center font-extrabold text-xs mt-1">
