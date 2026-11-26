@@ -4,17 +4,36 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="description" content="AgentTube — منصة لبناء ومشاركة وكلاء الذكاء الاصطناعي بالعربية والإنجليزية مع ذاكرة تراكمية وهندسة أوامر دقيقة." />
+  <meta name="theme-color" content="#F6F5F0" />
+  <meta name="referrer" content="strict-origin-when-cross-origin" />
+  <meta property="og:title" content="AgentTube — AI Agent Studio" />
+  <meta property="og:description" content="منصة وكلاء ذكاء اصطناعي للمستخدم العربي: برومبتات هندسية دقيقة وذاكرة تراكمية تحفظ تقدمك." />
+  <meta property="og:type" content="website" />
+  <link
+    rel="icon"
+    type="image/svg+xml"
+    href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40' fill='none'%3E%3Cpath d='M4 6H14L20 18L26 6H36L24 26V35H16V26L4 6Z' fill='%23EFE3C2' stroke='%23475569' stroke-width='2.5' stroke-linejoin='round'/%3E%3C/svg%3E"
+  />
   <title>AgentTube — AI Agent Studio</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="preconnect" href="https://agents-377s.onrender.com" crossorigin />
 
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-NE8QH6RTWG"></script>
   <script>
     window.dataLayer = window.dataLayer || [];
     function gtag() { dataLayer.push(arguments); }
     gtag('js', new Date());
-    gtag('config', 'G-NE8QH6RTWG');
+    gtag('config', 'G-NE8QH6RTWG', { anonymize_ip: true });
   </script>
-  
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+  <!-- Readable Arabic and English typography -->
+  <link
+    href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap"
+    rel="stylesheet"
+  />
 
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -44,12 +63,7 @@
     };
   </script>
 
-  <!-- Readable Arabic and English typography -->
-  <link
-    href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap"
-    rel="stylesheet">
-
-  <!-- Beautiful mathematical notation (LaTeX / TeX), including Arabic + English mixed messages -->
+  <!-- Mathematical notation (LaTeX / TeX) -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" />
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
 
@@ -58,14 +72,13 @@
   <script defer src="https://cdn.jsdelivr.net/npm/dompurify@3.2.6/dist/purify.min.js"></script>
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
 
-  <!-- React & Babel CDN -->
-  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <!-- React Production & Babel CDN -->
+  <script crossorigin src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.26.4/babel.min.js"></script>
 
   <style>
     :root {
-      /* Original requested color palette — single source of truth */
       --bg-linen: #F6F5F0;
       --bg-stone-soft: #ECEAE2;
       --bg-paper: #FDFCFA;
@@ -89,7 +102,6 @@
       --cat-creative-bg: #E5E0F0; --cat-creative-text: #2E2447;
       --cat-general-bg: #E6E4DD; --cat-general-text: #26303D;
 
-      /* Extra subtle utility hues are derived from the palette above */
       --border-soft: #D9DFDB;
       --text-muted: #556171;
       --shadow-card: 0 5px 24px rgba(38, 48, 61, .055), 0 1px 3px rgba(38, 48, 61, .035);
@@ -110,7 +122,7 @@
     html[lang="en"] body { font-family: 'Inter', 'IBM Plex Sans Arabic', system-ui, sans-serif; line-height: 1.62; }
     html[lang="ar"] body { font-family: 'IBM Plex Sans Arabic', 'Inter', system-ui, sans-serif; line-height: 1.76; }
     html[lang="ar"] h1, html[lang="ar"] h2, html[lang="ar"] h3, html[lang="ar"] h4 { line-height: 1.48; }
-    html[lang="ar"] .font-extrabold, html[lang="ar"] .font-extrabold { font-weight: 700; }
+    html[lang="ar"] .font-extrabold { font-weight: 700; }
     ::selection { background: var(--color-warm-sand); color: var(--text-slate-ink); }
     a, button { -webkit-tap-highlight-color: transparent; }
     button, input, select, textarea { font: inherit; }
@@ -140,7 +152,6 @@
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-    /* Calm, soft cards in place of hard Neo-Brutalist outlines */
     .nb-box, .nb-box-lg, .nb-box-sm, .nb-card {
       background: var(--bg-paper);
       border: 1px solid var(--border-soft);
@@ -191,7 +202,7 @@
       height: 5px; background: var(--color-underline);
       border-radius: 999px; margin: 10px auto 0;
     }
-    html[dir="rtl"] .yellow-underline::after { margin-inline-start: 0; }
+    html[dir="rtl"] .yellow-underline::after,
     html[dir="ltr"] .yellow-underline::after { margin-inline-start: 0; }
     .chat-grid-bg {
       background-color: var(--bg-linen);
@@ -206,7 +217,6 @@
       .nb-card, .nb-btn { transition-duration: 0ms; }
     }
 
-    /* Mixed RTL/LTR prose, tables, and code */
     .chat-rich { min-width: 0; color: var(--text-slate-ink); line-height: 1.82; overflow-wrap: anywhere; text-align: start; }
     html[lang="en"] .chat-rich { line-height: 1.7; }
     .chat-rich > :first-child { margin-top: 0; }
@@ -249,7 +259,6 @@
     .user-bubble .chat-rich a { color: #F7EACD; }
     .user-bubble .chat-rich :not(pre) > code { color: #FFFFFF; background: rgba(255, 255, 255, .17); border-color: rgba(255, 255, 255, .34); }
     .user-bubble .chat-rich li::marker { color: #E6EBD8; }
-    /* Mathematical notation: isolated LTR formulas inside comfortable RTL/English prose */
     .chat-rich .math-inline {
       display: inline-block; direction: ltr; unicode-bidi: isolate;
       vertical-align: baseline; max-width: 100%;
@@ -275,14 +284,12 @@
       white-space: pre-wrap; overflow-wrap: anywhere;
       font: .94em/1.6 'JetBrains Mono', monospace;
     }
-    /* In user bubbles, keep formulas legible instead of forcing white-on-white text. */
     .user-bubble .chat-rich .math-block {
       background: #FDFCFA; border-color: #D8E3DF;
       color: var(--text-slate-ink);
     }
     .user-bubble .chat-rich .math-inline { color: inherit; }
     .user-bubble .chat-rich .math-block .katex { color: var(--text-slate-ink); }
-    .chat-rich :not(pre) > code { unicode-bidi: isolate; }
     @media (max-width: 639px) {
       .chat-rich .math-block { padding: .8rem .6rem; margin: .8rem 0; }
       .chat-rich .math-block .katex { font-size: 1em; }
@@ -308,7 +315,6 @@
     .hljs-comment, .hljs-quote { color: #9EADBA; font-style: italic; }
     .hljs-built_in, .hljs-variable.language_, .hljs-meta { color: #9BDBE1; }
 
-    /* Navigation and accessible form refinements */
     .catalog-search-icon { inset-inline-start: 14px; inset-inline-end: auto; }
     .catalog-search-clear { inset-inline-end: 10px; inset-inline-start: auto; }
     .catalog-search-field { padding-inline-start: 42px; padding-inline-end: 34px; }
@@ -333,13 +339,171 @@
 </head>
 
 <body class="antialiased selection:bg-brandYellow selection:text-ink">
+  <noscript>
+    <div style="padding:2rem;text-align:center;font-family:sans-serif;">
+      يرجى تفعيل JavaScript لتشغيل AgentTube. / Please enable JavaScript to run AgentTube.
+    </div>
+  </noscript>
   <div id="root"></div>
 
   <script type="text/babel">
-    const { useState, useEffect, useRef } = React;
+    const { useState, useEffect, useRef, useCallback } = React;
 
-    // Backend URL Configuration
+    // ==========================================
+    // Production Config & Safe Utilities
+    // ==========================================
     const API_BASE = "https://agents-377s.onrender.com";
+    const REQUEST_TIMEOUT_MS = 25000;
+    const BUILD_AGENT_TIMEOUT_MS = 65000;
+
+    const safeStorage = {
+      get(key, fallback = "") {
+        try {
+          const val = window.localStorage.getItem(key);
+          return val !== null ? val : fallback;
+        } catch {
+          return fallback;
+        }
+      },
+      set(key, value) {
+        try {
+          window.localStorage.setItem(key, value);
+        } catch {}
+      },
+      remove(key) {
+        try {
+          window.localStorage.removeItem(key);
+        } catch {}
+      },
+    };
+
+    // Structured internal error — raw server errors are NEVER surfaced to users.
+    class AppError extends Error {
+      constructor(code, status = 0, context = "general") {
+        super(code);
+        this.name = "AppError";
+        this.code = code;
+        this.status = status;
+        this.context = context;
+      }
+    }
+
+    function classifyHttpError(status, rawErrorText, context) {
+      const hint = String(rawErrorText || "");
+      if (context === "auth_login" && (status === 400 || status === 401 || status === 404)) {
+        return "INVALID_CREDENTIALS";
+      }
+      if (status === 401) return "SESSION_EXPIRED";
+      if (status === 403) return "FORBIDDEN";
+      if (status === 404) return "NOT_FOUND";
+      if (status === 409) return "CONFLICT";
+      if (status === 429) return "RATE_LIMITED";
+      if (status === 400 || status === 422) {
+        if (context === "auth_register" && /exist|duplicate|already|taken|مستخدم|مسجل/i.test(hint)) {
+          return "CONFLICT";
+        }
+        return "VALIDATION_ERROR";
+      }
+      if (status === 200) {
+        if (context === "auth_login") return "INVALID_CREDENTIALS";
+        if (context === "auth_register" && /exist|duplicate|already|taken|مستخدم|مسجل/i.test(hint)) {
+          return "CONFLICT";
+        }
+        if (context === "chat") return "CHAT_INTERRUPTED";
+        return "SERVER_UNAVAILABLE";
+      }
+      if (status >= 500) return "SERVER_UNAVAILABLE";
+      return "UNKNOWN_ERROR";
+    }
+
+    function getFriendlyError(error, lang = "ar", context = "general") {
+      const isAr = lang === "ar";
+      if (typeof navigator !== "undefined" && navigator.onLine === false) {
+        return isAr
+          ? "لا يوجد اتصال بالإنترنت. تحقق من الشبكة وحاول مرة أخرى."
+          : "No internet connection. Please check your network and try again.";
+      }
+
+      const code = error instanceof AppError
+        ? error.code
+        : error?.name === "AbortError"
+          ? "TIMEOUT"
+          : "NETWORK_ERROR";
+
+      const ctx = error instanceof AppError ? error.context : context;
+
+      switch (code) {
+        case "INVALID_CREDENTIALS":
+          return isAr
+            ? "البريد الإلكتروني أو كلمة المرور غير صحيحة."
+            : "Incorrect email or password.";
+        case "SESSION_EXPIRED":
+          return isAr
+            ? "انتهت صلاحية الجلسة. يرجى تسجيل الدخول مجدداً."
+            : "Your session has expired. Please sign in again.";
+        case "FORBIDDEN":
+          return isAr
+            ? "ليس لديك صلاحية لتنفيذ هذا الإجراء."
+            : "You don't have permission to perform this action.";
+        case "CONFLICT":
+          return ctx === "auth_register"
+            ? (isAr ? "البريد الإلكتروني أو اسم المستخدم مسجل مسبقاً." : "This email or username is already registered.")
+            : (isAr ? "هذا العنصر موجود بالفعل." : "This item already exists.");
+        case "NOT_FOUND":
+          if (ctx === "open_agent") {
+            return isAr ? "هذا الوكيل غير متوفر حالياً." : "This agent is currently unavailable.";
+          }
+          return isAr ? "العنصر المطلوب غير متوفر." : "The requested item was not found.";
+        case "VALIDATION_ERROR":
+          if (ctx === "auth_register") {
+            return isAr
+              ? "يرجى التأكد من صحة البيانات المدخلة وأن كلمة المرور لا تقل عن 6 أحرف."
+              : "Please check your details and make sure the password is at least 6 characters.";
+          }
+          if (ctx === "create_agent") {
+            return isAr
+              ? "يرجى مراجعة حقول الوكيل والتأكد من تعبئة المطلوب بشكل صحيح."
+              : "Please review the agent fields and fill in all required details.";
+          }
+          return isAr
+            ? "يرجى مراجعة البيانات المدخلة والمحاولة مرة أخرى."
+            : "Please check your input and try again.";
+        case "RATE_LIMITED":
+          return isAr
+            ? "تم إرسال عدة طلبات خلال وقت قصير. انتظر لحظات وحاول مجدداً."
+            : "Too many requests. Please wait a moment and try again.";
+        case "TIMEOUT":
+          return ctx === "create_agent"
+            ? (isAr ? "استغرق تجهيز الوكيل وقتاً أطول من المعتاد. يرجى المحاولة مرة أخرى." : "Building your agent took longer than expected. Please try again.")
+            : (isAr ? "استغرق الاتصال وقتاً أطول من المعتاد. حاول مرة أخرى." : "The connection timed out. Please try again.");
+        case "CHAT_INTERRUPTED":
+          return isAr
+            ? "تعذر إكمال الرد حالياً. يرجى المحاولة مرة أخرى."
+            : "Couldn't complete the response right now. Please try again.";
+        case "SERVER_UNAVAILABLE":
+          return isAr
+            ? "الخدمة مشغولة مؤقتاً. يرجى المحاولة بعد لحظات."
+            : "The service is temporarily busy. Please try again shortly.";
+        case "NETWORK_ERROR":
+        default:
+          return isAr
+            ? "تعذر الاتصال بالخدمة حالياً. يرجى المحاولة مرة أخرى."
+            : "Unable to connect right now. Please try again.";
+      }
+    }
+
+    // Configure DOMPurify link safety hook once
+    let purifyHookRegistered = false;
+    function ensurePurifyHook() {
+      if (purifyHookRegistered || !window.DOMPurify) return;
+      window.DOMPurify.addHook("afterSanitizeAttributes", (node) => {
+        if (node.tagName === "A") {
+          node.setAttribute("target", "_blank");
+          node.setAttribute("rel", "noopener noreferrer");
+        }
+      });
+      purifyHookRegistered = true;
+    }
 
     const CATEGORIES = [
       { id: "All", ar: "الكل", en: "All" },
@@ -352,7 +516,6 @@
       { id: "General", ar: "عام", en: "General" },
     ];
 
-    // Top Card Banner Themes matching image_1e78e1.jpg (Red, Blue, Black, Emerald, Amber)
     const CARD_THEMES = {
       Education:    { bg: "var(--cat-education-bg)", text: "var(--cat-education-text)", badgeBg: "var(--bg-paper)", badgeText: "var(--cat-education-text)" },
       Coding:       { bg: "var(--cat-coding-bg)", text: "var(--cat-coding-text)", badgeBg: "var(--bg-paper)", badgeText: "var(--cat-coding-text)" },
@@ -391,11 +554,107 @@
     ];
 
     // ==========================================
-    // Custom Neo-Brutalist Logo & Icons
+    // Reusable Inline Error Banner (Inside Modals/Forms)
+    // ==========================================
+    function InlineAlert({ message }) {
+      if (!message) return null;
+      return (
+        <div
+          role="alert"
+          aria-live="assertive"
+          className="animate-pop flex items-start gap-2.5 px-3.5 py-2.5 rounded-xl bg-rose-50 border border-rose-300 text-rose-800 text-xs sm:text-sm font-bold leading-relaxed"
+        >
+          <span className="w-5 h-5 mt-0.5 flex-shrink-0 rounded-full bg-rose-600 text-white flex items-center justify-center text-[11px] font-extrabold">
+            !
+          </span>
+          <span className="flex-1">{message}</span>
+        </div>
+      );
+    }
+
+    // ==========================================
+    // Production Error Boundary
+    // ==========================================
+    class ErrorBoundary extends React.Component {
+      constructor(props) {
+        super(props);
+        this.state = { hasError: false };
+      }
+      static getDerivedStateFromError() {
+        return { hasError: true };
+      }
+      componentDidCatch() {}
+      render() {
+        if (this.state.hasError) {
+          const isAr = safeStorage.get("agenttube_lang", "ar") !== "en";
+          return (
+            <div className="min-h-[100dvh] flex items-center justify-center p-6 bg-cream text-ink" dir={isAr ? "rtl" : "ltr"}>
+              <div className="nb-box-lg max-w-md w-full p-8 text-center">
+                <div className="w-12 h-12 mx-auto mb-4 bg-brandYellow border border-line rounded-xl flex items-center justify-center font-extrabold text-xl">
+                  !
+                </div>
+                <h1 className="text-xl font-extrabold text-ink mb-2">
+                  {isAr ? "حدث خطأ غير متوقع" : "Something went wrong"}
+                </h1>
+                <p className="text-sm font-semibold text-neutral-600 mb-6">
+                  {isAr
+                    ? "نعتذر عن هذا الخلل المؤقت. أعد تحميل الصفحة للمتابعة."
+                    : "Sorry for the temporary interruption. Please reload the page to continue."}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => window.location.reload()}
+                  className="nb-btn px-6 py-2.5 bg-brandBlue hover:bg-brandBlueHover text-white font-extrabold text-sm"
+                >
+                  {isAr ? "إعادة تحميل الصفحة" : "Reload Page"}
+                </button>
+              </div>
+            </div>
+          );
+        }
+        return this.props.children;
+      }
+    }
+
+    // ==========================================
+    // Safe Avatar Component (Prevents Broken Images)
+    // ==========================================
+    function SafeAvatar({ src, alt = "", fallbackText = "A", className = "" }) {
+      const [failed, setFailed] = useState(false);
+      useEffect(() => {
+        setFailed(false);
+      }, [src]);
+
+      const initial = String(fallbackText || alt || "A").trim().charAt(0).toUpperCase() || "A";
+
+      if (!src || failed) {
+        return (
+          <div
+            aria-label={alt}
+            className={`${className} flex items-center justify-center bg-brandYellow text-ink font-extrabold select-none`}
+          >
+            {initial}
+          </div>
+        );
+      }
+
+      return (
+        <img
+          src={src}
+          alt={alt}
+          loading="lazy"
+          decoding="async"
+          onError={() => setFailed(true)}
+          className={className}
+        />
+      );
+    }
+
+    // ==========================================
+    // Custom Logo & Icons
     // ==========================================
     const BrandLogo = () => (
       <div className="flex items-center gap-2.5 select-none">
-        {/* Stylized Hatched Geometric Emblem matching image_1e78e0.png */}
         <svg className="brand-logo-mark w-9 h-9 flex-shrink-0" viewBox="0 0 40 40" fill="none">
           <path d="M4 6H14L20 18L26 6H36L24 26V35H16V26L4 6Z" fill="#EFE3C2" stroke="#475569" strokeWidth="2.5" strokeLinejoin="round"/>
           <path d="M9 10L17 24M23 10L31 10M18 28H22" stroke="#26303D" strokeWidth="2" strokeLinecap="round"/>
@@ -444,17 +703,16 @@
       };
 
       return (
-        <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
           {icons[name]}
         </svg>
       );
     };
 
-    // Custom Minimalist Black & Yellow Line Illustrations (Matching image_1e78f9.jpg)
     const FeatureIllustration = ({ type }) => {
       if (type === "architect") {
         return (
-          <svg className="w-40 h-28 mx-auto" viewBox="0 0 180 120" fill="none">
+          <svg className="w-40 h-28 mx-auto" viewBox="0 0 180 120" fill="none" aria-hidden="true">
             <rect x="34" y="42" width="112" height="58" fill="#EFE3C2" />
             <rect x="46" y="22" width="88" height="56" rx="2" fill="#FDFCFA" stroke="#26303D" strokeWidth="2.5" />
             <rect x="54" y="30" width="72" height="40" fill="#26303D" />
@@ -468,7 +726,7 @@
       }
       if (type === "memory") {
         return (
-          <svg className="w-40 h-28 mx-auto" viewBox="0 0 180 120" fill="none">
+          <svg className="w-40 h-28 mx-auto" viewBox="0 0 180 120" fill="none" aria-hidden="true">
             <rect x="38" y="45" width="105" height="50" fill="#EFE3C2" />
             <path d="M42 36C60 32 78 38 90 46C102 38 120 32 138 36V86C120 82 102 88 90 96C78 88 60 82 42 86V36Z" fill="#FDFCFA" stroke="#26303D" strokeWidth="2.5" strokeLinejoin="round" />
             <path d="M90 46V96" stroke="#26303D" strokeWidth="2.5" />
@@ -479,7 +737,7 @@
         );
       }
       return (
-        <svg className="w-40 h-28 mx-auto" viewBox="0 0 180 120" fill="none">
+        <svg className="w-40 h-28 mx-auto" viewBox="0 0 180 120" fill="none" aria-hidden="true">
           <rect x="34" y="44" width="96" height="54" fill="#EFE3C2" />
           <rect x="44" y="28" width="84" height="58" rx="2" fill="#FDFCFA" stroke="#26303D" strokeWidth="2.5" />
           <polygon points="80,46 80,68 98,57" fill="#26303D" />
@@ -524,7 +782,9 @@
             highlighted = result.value;
             detected = result.language || normalized || "text";
           }
-        } catch (e) { highlighted = escapeHtml(code); }
+        } catch {
+          highlighted = escapeHtml(code);
+        }
       }
 
       const copyCode = async () => {
@@ -533,7 +793,7 @@
           setCopied(true);
           clearTimeout(resetRef.current);
           resetRef.current = setTimeout(() => setCopied(false), 2000);
-        } catch (e) {}
+        } catch {}
       };
 
       return (
@@ -563,8 +823,6 @@
       );
     }
 
-    // Preserve inline code before extracting math, so `$...$` in code is not rendered.
-    // Code fences are already isolated by FormattedMessage.
     function extractMathExpressions(source) {
       const codeSegments = [];
       const mathSegments = [];
@@ -580,19 +838,16 @@
         return display ? `\n\n${key}\n\n` : key;
       };
 
-      // Display formulas first: $$...$$ and \[...\] (both can span lines).
       prepared = prepared.replace(/\\\[([\s\S]*?)\\\]/g,
         (original, latex) => addMath(original, latex, true));
       prepared = prepared.replace(/\$\$([\s\S]*?)\$\$/g,
         (original, latex) => addMath(original, latex, true));
-      // Inline formulas: \(...\) and $...$.
       prepared = prepared.replace(/\\\(([\s\S]*?)\\\)/g,
         (original, latex) => addMath(original, latex, false));
       prepared = prepared.replace(/(^|[^\$])\$([^\n$]+?)\$/g, (original, prefix, latex) => {
         if (!latex.trim() || /^\s|\s$/.test(latex)) return original;
         return prefix + addMath(original.slice(prefix.length), latex, false);
       });
-      // Let marked continue rendering inline backtick content as code.
       prepared = prepared.replace(/AGENTTUBECODESEGMENT(\d+)END/g,
         (match, index) => codeSegments[Number(index)] ?? match);
       return { prepared, mathSegments };
@@ -613,7 +868,7 @@
           maxExpand: 1000
         });
         return `<span class="${display ? "math-display-content" : "math-inline"}" dir="ltr">${result}</span>`;
-      } catch (error) {
+      } catch {
         return `<span class="math-fallback" dir="ltr">${escapeHtml(original)}</span>`;
       }
     }
@@ -623,6 +878,7 @@
       let html;
       if (window.marked && window.DOMPurify) {
         try {
+          ensurePurifyHook();
           const renderer = new window.marked.Renderer();
           renderer.html = (token) => escapeHtml(typeof token === "string" ? token : token.text || "");
           html = window.DOMPurify.sanitize(window.marked.parse(prepared, {
@@ -630,30 +886,25 @@
           }));
           html = html.replace(/<table>/g, '<div class="table-scroll"><table>')
                      .replace(/<\/table>/g, '</table></div>');
-        } catch (error) {
+        } catch {
           html = "<p>" + escapeHtml(prepared).replace(/\n/g, "<br>") + "</p>";
         }
       } else {
         html = "<p>" + escapeHtml(prepared).replace(/\n/g, "<br>") + "</p>";
       }
 
-      // Generated KaTeX markup is inserted only AFTER untrusted Markdown is sanitized.
-      // The KaTeX renderer runs with trust:false to prevent unsafe commands/URLs.
       for (const expression of mathSegments) {
         const mathHtml = mathToHtml(expression);
         if (expression.display) {
           const wrapper = `<div class="math-block" dir="ltr">${mathHtml}</div>`;
           const paragraph = new RegExp(`<p(?:\\s+[^>]*)?>\\s*${expression.key}\\s*</p>`, "g");
           html = html.replace(paragraph, () => wrapper);
-          // If Markdown placed the marker in another block, still render it visibly.
           html = html.split(expression.key).join(wrapper);
         } else {
           html = html.split(expression.key).join(mathHtml);
         }
       }
-      // Each prose block chooses its own direction; KaTeX itself remains LTR.
-      html = html.replace(/<(p|li|h[1-6]|blockquote|th|td)(?=[\s>])/g,
-        '<$1 dir="auto"');
+      html = html.replace(/<(p|li|h[1-6]|blockquote|th|td)(?=[\s>])/g, '<$1 dir="auto"');
       return html;
     }
 
@@ -667,7 +918,7 @@
       if (!text) return null;
       if (!text.includes("```") && /^\s*<(?:\?xml\b|[A-Za-z][\w:-]*[\s>])/.test(text)
         && /<\/[A-Za-z][\w:-]*>/.test(text)) {
-        return <CodeSnippet code={text.trim()} language="xml" lang={uiLang}/>;
+        return <CodeSnippet code="{text.trim()}" lang="{uiLang}" language="xml"/>;
       }
       const parts = text.split(/(```[\s\S]*?(?:```|$))/g).filter(Boolean);
       return (
@@ -691,12 +942,16 @@
 
     function CopyMessageButton({ text, lang = "ar" }) {
       const [copied, setCopied] = useState(false);
+      const timerRef = useRef(null);
+      useEffect(() => () => clearTimeout(timerRef.current), []);
+
       const handleCopy = async () => {
         try {
           await navigator.clipboard.writeText(text);
           setCopied(true);
-          setTimeout(() => setCopied(false), 1800);
-        } catch (e) {}
+          clearTimeout(timerRef.current);
+          timerRef.current = setTimeout(() => setCopied(false), 1800);
+        } catch {}
       };
       return (
         <button
@@ -732,8 +987,8 @@
     // Main Application Component
     // ==========================================
     function App() {
-      const [lang, setLang] = useState(() => localStorage.getItem("agenttube_lang") === "en" ? "en" : "ar"); // "ar" | "en"
-      const [token, setToken] = useState(() => localStorage.getItem("agenttube_token") || "");
+      const [lang, setLang] = useState(() => safeStorage.get("agenttube_lang", "ar") === "en" ? "en" : "ar");
+      const [token, setToken] = useState(() => safeStorage.get("agenttube_token", ""));
       const [user, setUser] = useState(null);
       const [showAuthModal, setShowAuthModal] = useState(false);
       const [authMode, setAuthMode] = useState("login");
@@ -746,6 +1001,7 @@
       // Explore & FAQ State
       const [agents, setAgents] = useState([]);
       const [loadingAgents, setLoadingAgents] = useState(true);
+      const [agentsLoadFailed, setAgentsLoadFailed] = useState(false);
       const [selectedCategory, setSelectedCategory] = useState("All");
       const [searchQuery, setSearchQuery] = useState("");
       const [openFaqIndex, setOpenFaqIndex] = useState(0);
@@ -759,6 +1015,8 @@
       const [activeAgent, setActiveAgent] = useState(null);
       const [agentMemory, setAgentMemory] = useState("");
       const [showMemoryModal, setShowMemoryModal] = useState(false);
+      const [memoryError, setMemoryError] = useState("");
+      const [clearingMemory, setClearingMemory] = useState(false);
       const [conversations, setConversations] = useState([]);
       const [activeConversationId, setActiveConversationId] = useState(null);
       const [messages, setMessages] = useState([]);
@@ -771,21 +1029,49 @@
       const catalogRef = useRef(null);
       const howItWorksRef = useRef(null);
       const faqRef = useRef(null);
+      const toastTimerRef = useRef(null);
+      const agentsAbortRef = useRef(null);
+      const streamAbortRef = useRef(null);
+      const userCancelledStreamRef = useRef(false);
+
+      const notify = useCallback((msg, type = "info") => {
+        if (!msg) return;
+        clearTimeout(toastTimerRef.current);
+        setToast({ msg, type });
+        toastTimerRef.current = setTimeout(() => setToast(null), 4000);
+      }, []);
+
+      useEffect(() => {
+        return () => {
+          clearTimeout(toastTimerRef.current);
+          agentsAbortRef.current?.abort();
+          streamAbortRef.current?.abort();
+        };
+      }, []);
+
+      const abortActiveStream = useCallback(() => {
+        if (streamAbortRef.current) {
+          userCancelledStreamRef.current = true;
+          streamAbortRef.current.abort();
+          streamAbortRef.current = null;
+        }
+      }, []);
 
       // Sync HTML direction
       useEffect(() => {
         document.documentElement.dir = lang === "ar" ? "rtl" : "ltr";
         document.documentElement.lang = lang;
         document.title = lang === "ar" ? "AgentTube — منصة وكلاء الذكاء الاصطناعي" : "AgentTube — AI Agent Studio";
-        localStorage.setItem("agenttube_lang", lang);
+        safeStorage.set("agenttube_lang", lang);
       }, [lang]);
 
-      // Lock document viewport completely when in chat mode
+      // Lock document viewport when in chat mode
       useEffect(() => {
         const isChat = view === "chat";
         document.documentElement.classList.toggle("chat-locked", isChat);
+        if (!isChat) abortActiveStream();
         return () => document.documentElement.classList.remove("chat-locked");
-      }, [view]);
+      }, [view, abortActiveStream]);
 
       useEffect(() => {
         if (!showMobileHistory) return;
@@ -804,24 +1090,87 @@
         el.style.height = Math.min(el.scrollHeight, 140) + "px";
       }, [inputMessage]);
 
-      const notify = (msg, type = "info") => {
-        setToast({ msg, type });
-        setTimeout(() => setToast(null), 3500);
-      };
+      const clearSession = useCallback(() => {
+        safeStorage.remove("agenttube_token");
+        setToken("");
+        setUser(null);
+        setConversations([]);
+        setAgentMemory("");
+      }, []);
 
-      const apiFetch = async (endpoint, options = {}) => {
-        const headers = {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          ...(options.headers || {}),
-        };
-        const res = await fetch(`${API_BASE}${endpoint}`, { ...options, headers });
-        const data = await res.json();
-        if (!res.ok || data.success === false) {
-          throw new Error(data.error || "حدث خطأ في الطلب");
+      // Centralized production API client — never leaks server errors or stack traces
+      const apiFetch = useCallback(async (endpoint, options = {}, context = "general") => {
+        const { timeoutMs = REQUEST_TIMEOUT_MS, signal: externalSignal, headers: extraHeaders, ...fetchOptions } = options;
+
+        if (typeof navigator !== "undefined" && navigator.onLine === false) {
+          throw new AppError("NETWORK_ERROR", 0, context);
         }
-        return data;
-      };
+
+        const controller = new AbortController();
+        let timedOut = false;
+
+        const onExternalAbort = () => controller.abort();
+        if (externalSignal) {
+          if (externalSignal.aborted) {
+            const abortErr = new Error("Aborted");
+            abortErr.name = "AbortError";
+            throw abortErr;
+          }
+          externalSignal.addEventListener("abort", onExternalAbort, { once: true });
+        }
+
+        const timeoutId = setTimeout(() => {
+          timedOut = true;
+          controller.abort();
+        }, timeoutMs);
+
+        try {
+          const headers = {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            ...(extraHeaders || {}),
+          };
+
+          const res = await fetch(`${API_BASE}${endpoint}`, {
+            ...fetchOptions,
+            headers,
+            signal: controller.signal,
+          });
+
+          let data = null;
+          try {
+            data = await res.json();
+          } catch {
+            data = null;
+          }
+
+          if (!res.ok || (data && data.success === false)) {
+            if (res.status === 401 && token && context !== "auth_login") {
+              clearSession();
+            }
+            const code = classifyHttpError(res.status, data?.error, context);
+            throw new AppError(code, res.status, context);
+          }
+
+          if (!data || typeof data !== "object") {
+            throw new AppError("SERVER_UNAVAILABLE", res.status, context);
+          }
+
+          return data;
+        } catch (err) {
+          if (err instanceof AppError) throw err;
+          if (err?.name === "AbortError") {
+            if (timedOut) throw new AppError("TIMEOUT", 408, context);
+            throw err;
+          }
+          throw new AppError("NETWORK_ERROR", 0, context);
+        } finally {
+          clearTimeout(timeoutId);
+          if (externalSignal) {
+            externalSignal.removeEventListener("abort", onExternalAbort);
+          }
+        }
+      }, [token, clearSession]);
 
       // 1. Fetch Current User
       useEffect(() => {
@@ -829,46 +1178,65 @@
           setUser(null);
           return;
         }
-        apiFetch("/api/auth/me")
-          .then((res) => setUser(res.data))
-          .catch(() => {
-            localStorage.removeItem("agenttube_token");
-            setToken("");
-            setUser(null);
+        let cancelled = false;
+        apiFetch("/api/auth/me", {}, "auth_me")
+          .then((res) => {
+            if (!cancelled) setUser(res.data || null);
+          })
+          .catch((err) => {
+            if (cancelled) return;
+            if (err instanceof AppError && err.status === 401) {
+              clearSession();
+            }
           });
-      }, [token]);
+        return () => { cancelled = true; };
+      }, [token, apiFetch, clearSession]);
 
       // 2. Fetch Agents
-      const fetchAgents = async () => {
+      const fetchAgents = useCallback(async () => {
+        agentsAbortRef.current?.abort();
+        const controller = new AbortController();
+        agentsAbortRef.current = controller;
+
         setLoadingAgents(true);
+        setAgentsLoadFailed(false);
         try {
           const params = new URLSearchParams();
           if (selectedCategory !== "All") params.append("category", selectedCategory);
           if (searchQuery.trim()) params.append("search", searchQuery.trim());
-          const res = await apiFetch(`/api/agents?${params.toString()}`);
-          setAgents(res.data || []);
+          const res = await apiFetch(
+            `/api/agents?${params.toString()}`,
+            { signal: controller.signal },
+            "load_agents"
+          );
+          if (controller.signal.aborted) return;
+          setAgents(Array.isArray(res.data) ? res.data : []);
         } catch (err) {
-          notify(err.message, "error");
+          if (err?.name === "AbortError" && !(err instanceof AppError)) return;
+          setAgentsLoadFailed(true);
+          notify(getFriendlyError(err, lang, "load_agents"), "error");
         } finally {
-          setLoadingAgents(false);
+          if (!controller.signal.aborted) {
+            setLoadingAgents(false);
+          }
         }
-      };
+      }, [selectedCategory, searchQuery, apiFetch, lang, notify]);
 
       useEffect(() => {
         const timer = setTimeout(fetchAgents, 250);
         return () => clearTimeout(timer);
-      }, [selectedCategory, searchQuery]);
+      }, [fetchAgents]);
 
       const loadProfileAgents = async (account) => {
         setProfileLoading(true);
         setProfileError("");
         try {
-          const res = await apiFetch("/api/agents?limit=50");
+          const res = await apiFetch("/api/agents?limit=50", {}, "load_agents");
           const list = Array.isArray(res.data) ? res.data
             : (Array.isArray(res.data?.agents) ? res.data.agents : []);
           setProfileAgents(list.filter((agent) => isAgentOwnedBy(agent, account)));
         } catch (err) {
-          setProfileError(err.message || (lang === "ar" ? "تعذر تحميل الوكلاء." : "Could not load agents."));
+          setProfileError(getFriendlyError(err, lang, "load_agents"));
         } finally {
           setProfileLoading(false);
         }
@@ -918,12 +1286,12 @@
 
       // Fetch Agent Memory
       const fetchAgentMemory = async (slug) => {
-        if (!token) {
+        if (!token || !slug) {
           setAgentMemory("");
           return;
         }
         try {
-          const memRes = await apiFetch(`/api/agents/${slug}/memory`);
+          const memRes = await apiFetch(`/api/agents/${encodeURIComponent(slug)}/memory`, {}, "memory");
           setAgentMemory(memRes.data?.summary || "");
         } catch {
           setAgentMemory("");
@@ -931,22 +1299,29 @@
       };
 
       const handleClearAgentMemory = async () => {
-        if (!activeAgent || !token) return;
+        if (!activeAgent || !token || clearingMemory) return;
+        setClearingMemory(true);
+        setMemoryError("");
         try {
-          await apiFetch(`/api/agents/${activeAgent.slug}/memory`, { method: "DELETE" });
+          await apiFetch(`/api/agents/${encodeURIComponent(activeAgent.slug)}/memory`, { method: "DELETE" }, "memory");
           setAgentMemory("");
           setShowMemoryModal(false);
           notify(lang === "ar" ? "تم تصفير ذاكرة التقدم بنجاح" : "Progress memory cleared", "success");
         } catch (err) {
-          notify(err.message, "error");
+          setMemoryError(getFriendlyError(err, lang, "memory"));
+        } finally {
+          setClearingMemory(false);
         }
       };
 
       // Open Agent Chat Workspace
       const openAgentWorkspace = async (slug) => {
+        abortActiveStream();
         try {
-          const res = await apiFetch(`/api/agents/${slug}`);
+          const res = await apiFetch(`/api/agents/${encodeURIComponent(slug)}`, {}, "open_agent");
           const agentData = res.data;
+          if (!agentData) throw new AppError("NOT_FOUND", 404, "open_agent");
+
           setActiveAgent(agentData);
           setShowMobileHistory(false);
           setActiveConversationId(null);
@@ -954,31 +1329,36 @@
           setView("chat");
 
           if (token) {
-            const [convRes] = await Promise.all([
-              apiFetch(`/api/conversations?agentId=${agentData._id}`),
+            const [convResult] = await Promise.allSettled([
+              apiFetch(`/api/conversations?agentId=${encodeURIComponent(agentData._id)}`, {}, "load_chat"),
               fetchAgentMemory(slug),
             ]);
-            setConversations(convRes.data || []);
+            setConversations(
+              convResult.status === "fulfilled" && Array.isArray(convResult.value?.data)
+                ? convResult.value.data
+                : []
+            );
           } else {
             setConversations([]);
             setAgentMemory("");
           }
         } catch (err) {
-          notify(err.message, "error");
+          notify(getFriendlyError(err, lang, "open_agent"), "error");
         }
       };
 
       // Load specific conversation
       const selectConversation = async (convId) => {
+        abortActiveStream();
         setActiveConversationId(convId);
         setShowMobileHistory(false);
         setLoadingMessages(true);
         try {
-          const res = await apiFetch(`/api/conversations/${convId}/messages`);
-          setMessages(res.data || []);
+          const res = await apiFetch(`/api/conversations/${encodeURIComponent(convId)}/messages`, {}, "load_chat");
+          setMessages(Array.isArray(res.data) ? res.data : []);
           requestAnimationFrame(() => scrollToBottom(false));
         } catch (err) {
-          notify(err.message, "error");
+          notify(getFriendlyError(err, lang, "load_chat"), "error");
         } finally {
           setLoadingMessages(false);
         }
@@ -988,15 +1368,16 @@
       const handleDeleteConversation = async (e, convId) => {
         e.stopPropagation();
         try {
-          await apiFetch(`/api/conversations/${convId}`, { method: "DELETE" });
+          await apiFetch(`/api/conversations/${encodeURIComponent(convId)}`, { method: "DELETE" }, "load_chat");
           setConversations((prev) => prev.filter((c) => c._id !== convId));
           if (activeConversationId === convId) {
+            abortActiveStream();
             setActiveConversationId(null);
             setMessages([]);
           }
           notify(lang === "ar" ? "تم حذف المحادثة" : "Conversation deleted", "success");
         } catch (err) {
-          notify(err.message, "error");
+          notify(getFriendlyError(err, lang, "load_chat"), "error");
         }
       };
 
@@ -1012,8 +1393,13 @@
           return;
         }
 
-        const tempUserId = Date.now().toString();
-        const tempModelId = (Date.now() + 1).toString();
+        if (typeof navigator !== "undefined" && navigator.onLine === false) {
+          notify(getFriendlyError(new AppError("NETWORK_ERROR", 0, "chat"), lang, "chat"), "error");
+          return;
+        }
+
+        const tempUserId = `u_${Date.now()}`;
+        const tempModelId = `m_${Date.now() + 1}`;
 
         const tempUserMsg = { _id: tempUserId, role: "user", text: textToSend };
         const tempModelMsg = { _id: tempModelId, role: "model", text: "" };
@@ -1026,8 +1412,15 @@
         setSendingMessage(true);
         requestAnimationFrame(() => scrollToBottom(true));
 
+        const controller = new AbortController();
+        streamAbortRef.current = controller;
+        userCancelledStreamRef.current = false;
+
+        let receivedDone = false;
+        let receivedAnyChunk = false;
+
         try {
-          const response = await fetch(`${API_BASE}/api/agents/${activeAgent.slug}/chat`, {
+          const response = await fetch(`${API_BASE}/api/agents/${encodeURIComponent(activeAgent.slug)}/chat`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -1037,11 +1430,27 @@
               message: textToSend,
               conversationId: activeConversationId,
             }),
+            signal: controller.signal,
           });
 
           if (!response.ok) {
-            const errData = await response.json().catch(() => ({}));
-            throw new Error(errData.error || "فشل إرسال الرسالة");
+            let errData = null;
+            try {
+              errData = await response.json();
+            } catch {
+              errData = null;
+            }
+            if (response.status === 401) {
+              clearSession();
+              setAuthMode("login");
+              setShowAuthModal(true);
+            }
+            const code = classifyHttpError(response.status, errData?.error, "chat");
+            throw new AppError(code, response.status, "chat");
+          }
+
+          if (!response.body || typeof response.body.getReader !== "function") {
+            throw new AppError("CHAT_INTERRUPTED", 500, "chat");
           }
 
           const reader = response.body.getReader();
@@ -1061,13 +1470,22 @@
               if (!line.startsWith("data:")) continue;
 
               const jsonStr = line.replace(/^data:\s*/, "");
-              const data = JSON.parse(jsonStr);
+              if (!jsonStr || jsonStr === "[DONE]") continue;
+
+              let data;
+              try {
+                data = JSON.parse(jsonStr);
+              } catch {
+                continue;
+              }
 
               if (data.error) {
-                throw new Error(data.error);
+                const isRate = /rate|quota|limit|429/i.test(String(data.error));
+                throw new AppError(isRate ? "RATE_LIMITED" : "CHAT_INTERRUPTED", isRate ? 429 : 500, "chat");
               }
 
               if (data.chunk) {
+                receivedAnyChunk = true;
                 setMessages((prev) =>
                   prev.map((msg) =>
                     msg._id === tempModelId
@@ -1078,7 +1496,8 @@
               }
 
               if (data.done) {
-                if (data.messages) {
+                receivedDone = true;
+                if (Array.isArray(data.messages)) {
                   setMessages((prev) => [
                     ...prev.filter((m) => m._id !== tempUserId && m._id !== tempModelId),
                     ...data.messages,
@@ -1098,26 +1517,41 @@
                   ]);
                 }
 
-                // Refresh memory badge in background after turn finishes
-                setTimeout(() => fetchAgentMemory(activeAgent.slug), 1800);
+                const currentSlug = activeAgent.slug;
+                setTimeout(() => fetchAgentMemory(currentSlug), 1800);
               }
             }
           }
+
+          if (!receivedDone && !receivedAnyChunk) {
+            throw new AppError("CHAT_INTERRUPTED", 500, "chat");
+          }
         } catch (err) {
-          notify(err.message, "error");
-          setMessages((prev) =>
-            prev.filter((m) => !(m._id === tempModelId && m.text === ""))
-          );
+          if (userCancelledStreamRef.current) return;
+          notify(getFriendlyError(err, lang, "chat"), "error");
+          if (!receivedAnyChunk) {
+            setMessages((prev) =>
+              prev.filter((m) => m._id !== tempUserId && m._id !== tempModelId)
+            );
+            if (!textOverride) {
+              setInputMessage(textToSend);
+            }
+          } else {
+            setMessages((prev) =>
+              prev.filter((m) => !(m._id === tempModelId && !m.text))
+            );
+          }
         } finally {
+          if (streamAbortRef.current === controller) {
+            streamAbortRef.current = null;
+          }
           setSendingMessage(false);
         }
       };
 
       const handleLogout = () => {
-        localStorage.removeItem("agenttube_token");
-        setToken("");
-        setUser(null);
-        setConversations([]);
+        abortActiveStream();
+        clearSession();
         setShowMobileHistory(false);
         setProfileAgents([]);
         setProfileError("");
@@ -1136,20 +1570,23 @@
               : "min-h-[100dvh] pb-16 sm:pb-0"
           }`}
         >
-          {/* Toast Notification */}
+          {/* Global Toast Notification — always above modals (z-[100]) */}
           {toast && (
-            <div className="mobile-toast animate-pop fixed bottom-5 left-5 z-50 flex items-center gap-3 px-4 py-3 nb-box text-sm font-bold">
-              <span className={`w-3 h-3 border border-line flex-shrink-0 ${toast.type === "error" ? "bg-rose-500" : "bg-brandYellow"}`}></span>
+            <div
+              role="status"
+              aria-live="polite"
+              className="mobile-toast animate-pop fixed bottom-5 left-5 z-[100] flex items-center gap-3 px-4 py-3 nb-box text-sm font-bold"
+            >
+              <span className={`w-3 h-3 rounded-full flex-shrink-0 ${toast.type === "error" ? "bg-rose-500" : "bg-brandBlue"}`}></span>
               <span>{toast.msg}</span>
             </div>
           )}
 
           {/* ========================================== */}
-          {/* TOP NAVBAR (Matching image_1e78e0.png)     */}
+          {/* TOP NAVBAR                                 */}
           {/* ========================================== */}
           <header className="sticky top-0 z-30 flex-shrink-0 bg-cream border-b-2 border-line">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
-              {/* Right Side: Logo + Navigation Links */}
               <div className="flex items-center gap-6 lg:gap-8">
                 <button
                   type="button"
@@ -1161,18 +1598,21 @@
 
                 <nav className="hidden md:flex items-center gap-6 text-sm font-bold" aria-label={lang === "ar" ? "التنقل الرئيسي" : "Main navigation"}>
                   <button
+                    type="button"
                     onClick={() => scrollToSection(catalogRef)}
                     className={`transition-colors ${view === "explore" ? "text-brandBlue" : "text-ink hover:text-brandBlue"}`}
                   >
                     {lang === "ar" ? "استكشف الوكلاء" : "Explore Agents"}
                   </button>
                   <button
+                    type="button"
                     onClick={() => scrollToSection(howItWorksRef)}
                     className="text-ink hover:text-brandBlue transition-colors"
                   >
                     {lang === "ar" ? "كيف يعمل؟" : "How it Works"}
                   </button>
                   <button
+                    type="button"
                     onClick={() => scrollToSection(faqRef)}
                     className="text-ink hover:text-brandBlue transition-colors"
                   >
@@ -1180,6 +1620,7 @@
                   </button>
                   {user && (
                     <button
+                      type="button"
                       onClick={openProfile}
                       className={`transition-colors ${view === "profile" ? "text-brandBlue underline decoration-2 underline-offset-4" : "text-ink hover:text-brandBlue"}`}
                     >
@@ -1189,7 +1630,6 @@
                 </nav>
               </div>
 
-              {/* Left Side: Language Switcher + Sign In / Create Agent */}
               <div className="flex items-center gap-2 sm:gap-3">
                 <button
                   type="button"
@@ -1220,15 +1660,23 @@
                 {user ? (
                   <div className="flex items-center gap-2">
                     <button
+                      type="button"
                       onClick={openProfile}
                       className="nb-btn flex items-center gap-2 bg-paper px-2.5 py-1 text-xs font-extrabold text-ink"
                     >
-                      <img src={user.avatarUrl} alt="" className="w-6 h-6 border border-line bg-cream" />
+                      <SafeAvatar
+                        src={user.avatarUrl}
+                        alt={user.displayName || user.username}
+                        fallbackText={user.displayName || user.username}
+                        className="w-6 h-6 border border-line bg-cream text-[11px] object-cover"
+                      />
                       <span className="hidden sm:inline max-w-[100px] truncate">{user.displayName || user.username}</span>
                     </button>
                     <button
+                      type="button"
                       onClick={handleLogout}
                       title={lang === "ar" ? "تسجيل الخروج" : "Sign out"}
+                      aria-label={lang === "ar" ? "تسجيل الخروج" : "Sign out"}
                       className="nb-btn p-1.5 bg-paper hover:bg-rose-100 text-ink"
                     >
                       <Icon name="logout" className="w-4 h-4" />
@@ -1236,6 +1684,7 @@
                   </div>
                 ) : (
                   <button
+                    type="button"
                     onClick={() => {
                       setAuthMode("login");
                       setShowAuthModal(true);
@@ -1254,15 +1703,12 @@
           {/* ========================================== */}
           {view === "explore" && (
             <main className="flex-1">
-              {/* 1. HERO SECTION (Exact Match to image_1e78e0.png) */}
               <section className="max-w-5xl mx-auto px-4 sm:px-6 pt-12 pb-16 sm:pt-16 sm:pb-20 text-center">
-                {/* Yellow Square-Dot Badge */}
                 <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-brandYellow border-2 border-line shadow-sm text-xs sm:text-sm font-extrabold text-ink mb-6">
                   <span className="w-2 h-2 bg-darkPanel inline-block" />
                   <span>{lang === "ar" ? "إيه هو AgentTube؟" : "What is AgentTube?"}</span>
                 </div>
 
-                {/* Bold Display Headline with Yellow Underline */}
                 <h1 className="text-3xl sm:text-5xl lg:text-[56px] font-extrabold text-ink tracking-tight leading-[1.18] mb-6">
                   <span className="yellow-underline">
                     {lang === "ar"
@@ -1271,16 +1717,15 @@
                   </span>
                 </h1>
 
-                {/* Subtitle */}
                 <p className="text-base sm:text-xl font-medium text-neutral-700 max-w-2xl mx-auto leading-relaxed mb-8">
                   {lang === "ar"
                     ? "منصة وكلاء ذكاء اصطناعي للمستخدم العربي: برومبتات هندسية دقيقة، ذاكرة تراكمية تحفظ تقدمك، وإمكانية إنشاء وكلائك ومشاركتهم بسهولة."
                     : "An AI Agent Hub for Arabic & English creators, with structured XML prompts, cross-session memory, and easy agent creation and sharing."}
                 </p>
 
-                {/* Primary CTAs */}
                 <div className="flex flex-wrap items-center justify-center gap-3.5 mb-12">
                   <button
+                    type="button"
                     onClick={() => (token ? setShowCreateModal(true) : (setAuthMode("register"), setShowAuthModal(true)))}
                     className="nb-btn px-6 py-3 bg-brandBlue hover:bg-brandBlueHover text-white text-sm sm:text-base font-extrabold flex items-center gap-2"
                   >
@@ -1288,6 +1733,7 @@
                     <span>{lang === "ar" ? "أنشئ وكيلك الآن مجاناً" : "Build Your Agent Now"}</span>
                   </button>
                   <button
+                    type="button"
                     onClick={() => scrollToSection(catalogRef)}
                     className="nb-btn px-6 py-3 bg-paper hover:bg-brandYellow text-ink text-sm sm:text-base font-extrabold flex items-center gap-2"
                   >
@@ -1296,7 +1742,6 @@
                   </button>
                 </div>
 
-                {/* 3 Stat Boxes (Matching image_1e78e0.png) */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-3xl mx-auto">
                   <div className="nb-box py-6 px-4 text-center">
                     <div className="text-2xl sm:text-3xl font-extrabold text-ink" dir="ltr">
@@ -1325,7 +1770,6 @@
                 </div>
               </section>
 
-              {/* 2. HOW IT WORKS / 3 NUMBERED CARDS (Matching image_1e78f9.jpg) */}
               <section ref={howItWorksRef} className="max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-16 border-t-2 border-line">
                 <div className="mb-10">
                   <div className="inline-flex items-center gap-2 px-3 py-1 bg-brandYellow border-2 border-line shadow-sm text-xs font-extrabold text-ink mb-4">
@@ -1342,7 +1786,6 @@
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  {/* Card 01 */}
                   <div className="nb-box p-6 flex flex-col justify-between">
                     <div>
                       <div className="flex items-center gap-3 mb-5">
@@ -1364,7 +1807,6 @@
                     </p>
                   </div>
 
-                  {/* Card 02 */}
                   <div className="nb-box p-6 flex flex-col justify-between">
                     <div>
                       <div className="flex items-center gap-3 mb-5">
@@ -1386,7 +1828,6 @@
                     </p>
                   </div>
 
-                  {/* Card 03 */}
                   <div className="nb-box p-6 flex flex-col justify-between">
                     <div>
                       <div className="flex items-center gap-3 mb-5">
@@ -1410,10 +1851,8 @@
                 </div>
               </section>
 
-              {/* 3. AGENTS CATALOG SECTION (Matching image_1e78e1.jpg) */}
               <section ref={catalogRef} className="bg-catalogGray border-y-2 border-line py-12 sm:py-16">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6">
-                  {/* Top Banner Bar (Inspired by the top banner in image_1e78e1.jpg) */}
                   <div className="nb-box p-4 sm:p-6 mb-8">
                     <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
                       <div className="flex items-center gap-3">
@@ -1425,7 +1864,6 @@
                         </h2>
                       </div>
 
-                      {/* Agent catalog search (not Google web search) */}
                       <div className="relative w-full lg:w-80">
                         <Icon name="search" className="catalog-search-icon w-4 h-4 text-ink absolute top-1/2 -translate-y-1/2" />
                         <input
@@ -1440,6 +1878,7 @@
                           <button
                             type="button"
                             onClick={() => setSearchQuery("")}
+                            aria-label={lang === "ar" ? "مسح البحث" : "Clear search"}
                             className="catalog-search-clear absolute top-1/2 -translate-y-1/2 text-ink hover:text-rose-600 p-1"
                           >
                             <Icon name="close" className="w-3.5 h-3.5" />
@@ -1448,13 +1887,13 @@
                       </div>
                     </div>
 
-                    {/* Category Filter Buttons */}
                     <div className="flex items-center gap-2 overflow-x-auto pt-4 mt-4 border-t-2 border-line no-scrollbar">
                       {CATEGORIES.map((cat) => {
                         const active = selectedCategory === cat.id;
                         return (
                           <button
                             key={cat.id}
+                            type="button"
                             onClick={() => setSelectedCategory(cat.id)}
                             className={`px-3.5 py-1.5 text-xs sm:text-sm font-extrabold whitespace-nowrap border-2 border-line transition-all ${
                               active
@@ -1469,12 +1908,28 @@
                     </div>
                   </div>
 
-                  {/* Agents Grid (Matching image_1e78e1.jpg Course Cards) */}
                   {loadingAgents ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                       {[1, 2, 3, 4, 5, 6].map((n) => (
                         <div key={n} className="nb-box h-72 animate-pulse bg-paper" />
                       ))}
+                    </div>
+                  ) : agentsLoadFailed && agents.length === 0 ? (
+                    <div className="nb-box p-12 text-center">
+                      <h3 className="text-xl font-extrabold text-ink mb-2">
+                        {lang === "ar" ? "تعذر تحميل قائمة الوكلاء حالياً" : "Couldn't load agents right now"}
+                      </h3>
+                      <p className="text-sm font-semibold text-neutral-600 mb-6">
+                        {lang === "ar" ? "يرجى المحاولة مرة أخرى بعد لحظات." : "Please try again in a moment."}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={fetchAgents}
+                        className="nb-btn px-5 py-2.5 bg-brandYellow text-ink font-extrabold text-sm inline-flex items-center gap-2"
+                      >
+                        <Icon name="refresh" className="w-4 h-4" />
+                        <span>{lang === "ar" ? "إعادة المحاولة" : "Try Again"}</span>
+                      </button>
                     </div>
                   ) : agents.length === 0 ? (
                     <div className="nb-box p-12 text-center">
@@ -1485,6 +1940,7 @@
                         {lang === "ar" ? "كن أول من يبني وكيلاً في هذا التصنيف!" : "Be the first to build an agent in this category!"}
                       </p>
                       <button
+                        type="button"
                         onClick={() => (token ? setShowCreateModal(true) : setShowAuthModal(true))}
                         className="nb-btn px-5 py-2.5 bg-brandBlue text-white font-extrabold text-sm inline-flex items-center gap-2"
                       >
@@ -1499,10 +1955,17 @@
                         return (
                           <div
                             key={agent._id}
+                            role="button"
+                            tabIndex={0}
                             onClick={() => openAgentWorkspace(agent.slug)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" || e.key === " ") {
+                                e.preventDefault();
+                                openAgentWorkspace(agent.slug);
+                              }
+                            }}
                             className="nb-card cursor-pointer flex flex-col justify-between overflow-hidden"
                           >
-                            {/* Top Colored Visual Banner (Like Laravel Red / React Blue / Next.js Black in image_1e78e1.jpg) */}
                             <div
                               style={{ backgroundColor: theme.bg, color: theme.text }}
                               className="agent-card-banner p-5 border-b border-line relative flex items-center justify-between gap-4 min-h-[132px]"
@@ -1520,15 +1983,15 @@
                               </div>
 
                               <div className="relative flex-shrink-0 z-10">
-                                <img
+                                <SafeAvatar
                                   src={agent.avatarUrl}
                                   alt={agent.name}
-                                  className="w-16 h-16 bg-paper border-2 border-line shadow-sm object-cover"
+                                  fallbackText={agent.name}
+                                  className="w-16 h-16 bg-paper border-2 border-line shadow-sm object-cover text-lg"
                                 />
                               </div>
                             </div>
 
-                            {/* Bottom White Body (Matching image_1e78e1.jpg) */}
                             <div className="p-5 flex-1 flex flex-col justify-between bg-paper">
                               <div>
                                 <div className="flex items-center justify-between text-xs font-bold text-neutral-500 mb-1.5">
@@ -1544,7 +2007,6 @@
                                 </p>
                               </div>
 
-                              {/* Bottom Action Bar */}
                               <div className="pt-3 border-t-2 border-line flex items-center justify-between">
                                 <span className="px-2.5 py-1 bg-darkPanel text-brandYellow text-xs font-extrabold">
                                   {lang === "ar" ? "ذاكرة ذكية مفعّلة" : "Smart Memory"}
@@ -1563,7 +2025,6 @@
                 </div>
               </section>
 
-              {/* 4. FAQ ACCORDION SECTION (Exact Match to image_1e78df.png) */}
               <section ref={faqRef} className="max-w-4xl mx-auto px-4 sm:px-6 py-14 sm:py-20">
                 <div className="text-center mb-10">
                   <div className="inline-flex items-center gap-2 px-3 py-1 bg-brandYellow border-2 border-line shadow-sm text-xs font-extrabold text-ink mb-4">
@@ -1582,13 +2043,13 @@
                       <div key={idx} className="nb-box overflow-hidden">
                         <button
                           type="button"
+                          aria-expanded={isOpen}
                           onClick={() => setOpenFaqIndex(isOpen ? -1 : idx)}
                           className="w-full px-5 py-4 flex items-center justify-between gap-4 text-start bg-paper hover:bg-cream/50 transition-colors"
                         >
                           <span className="text-base sm:text-lg font-extrabold text-ink">
                             {lang === "ar" ? item.q_ar : item.q_en}
                           </span>
-                          {/* Yellow Square Toggle Button (+ / ×) matching image_1e78df.png */}
                           <span className="w-8 h-8 flex-shrink-0 bg-brandYellow border-2 border-line flex items-center justify-center font-extrabold text-lg text-ink">
                             {isOpen ? "×" : "+"}
                           </span>
@@ -1604,7 +2065,6 @@
                 </div>
               </section>
 
-              {/* Simple Neo-Brutalist Footer */}
               <footer className="bg-darkPanel text-cream border-t-2 border-line py-8 px-4 sm:px-6">
                 <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
                   <div className="flex items-center gap-2.5">
@@ -1622,7 +2082,7 @@
           )}
 
           {/* ========================================== */}
-          {/* VIEW 2: MY PROFILE (Neo-Brutalist Style)   */}
+          {/* VIEW 2: MY PROFILE                         */}
           {/* ========================================== */}
           {view === "profile" && user && (
             <ProfilePage
@@ -1640,11 +2100,9 @@
 
           {/* ========================================== */}
           {/* VIEW 3: AGENT CHAT WORKSPACE               */}
-          {/* Static Outer Frame + Smooth Chat Scroll    */}
           {/* ========================================== */}
           {view === "chat" && activeAgent && (
             <div className="flex-1 flex min-h-0 overflow-hidden bg-cream">
-              {/* Mobile Backdrop for History Drawer */}
               {showMobileHistory && (
                 <button
                   type="button"
@@ -1654,7 +2112,6 @@
                 />
               )}
 
-              {/* Static Left/Right Sidebar */}
               <aside
                 id="conversation-history"
                 aria-label={lang === "ar" ? "سجل المحادثات" : "Chat history"}
@@ -1664,22 +2121,23 @@
                     : "hidden"
                 } md:static md:z-auto md:flex md:w-[310px] md:h-full md:flex-shrink-0 flex-col border-e-2 border-line min-h-0 overflow-hidden`}
               >
-                {/* Mobile Drawer Header */}
                 <div className="md:hidden flex-shrink-0 flex items-center justify-between px-4 py-3.5 bg-brandYellow border-b-2 border-line">
                   <span className="font-extrabold text-sm text-ink">{lang === "ar" ? "سجل المحادثات والذاكرة" : "History & Memory"}</span>
                   <button
                     type="button"
                     onClick={() => setShowMobileHistory(false)}
+                    aria-label={lang === "ar" ? "إغلاق" : "Close"}
                     className="p-1 bg-paper border border-line text-ink"
                   >
                     <Icon name="close" className="w-4 h-4" />
                   </button>
                 </div>
 
-                {/* Static Agent Info Section */}
                 <div className="flex-shrink-0 p-4 border-b-2 border-line bg-cream/60">
                   <button
+                    type="button"
                     onClick={() => {
+                      abortActiveStream();
                       setView("explore");
                       setShowMobileHistory(false);
                       fetchAgents();
@@ -1691,10 +2149,11 @@
                   </button>
 
                   <div className="flex items-center gap-3">
-                    <img
+                    <SafeAvatar
                       src={activeAgent.avatarUrl}
                       alt={activeAgent.name}
-                      className="w-12 h-12 bg-paper border-2 border-line shadow-sm object-cover flex-shrink-0"
+                      fallbackText={activeAgent.name}
+                      className="w-12 h-12 bg-paper border-2 border-line shadow-sm object-cover flex-shrink-0 text-base"
                     />
                     <div className="min-w-0">
                       <h2 className="font-extrabold text-ink truncate text-sm" dir="auto">
@@ -1712,10 +2171,11 @@
                     {activeAgent.description}
                   </p>
 
-                  {/* Action Buttons: New Chat & Memory Inspector */}
                   <div className="mt-3.5 flex gap-2">
                     <button
+                      type="button"
                       onClick={() => {
+                        abortActiveStream();
                         setActiveConversationId(null);
                         setMessages([]);
                         setShowMobileHistory(false);
@@ -1729,8 +2189,12 @@
                     {token && (
                       <button
                         type="button"
-                        onClick={() => setShowMemoryModal(true)}
+                        onClick={() => {
+                          setMemoryError("");
+                          setShowMemoryModal(true);
+                        }}
                         title={lang === "ar" ? "عرض ذاكرة التقدم المحفوظة" : "View saved progress"}
+                        aria-label={lang === "ar" ? "عرض ذاكرة التقدم المحفوظة" : "View saved progress"}
                         className={`py-2 px-2.5 nb-btn text-xs font-extrabold flex items-center gap-1 ${
                           agentMemory ? "bg-brandYellow text-ink" : "bg-paper text-neutral-500"
                         }`}
@@ -1741,7 +2205,6 @@
                   </div>
                 </div>
 
-                {/* Independent Scrollable Conversation History */}
                 <div className="sidebar-scroll-area flex-1 min-h-0 p-3 space-y-2 bg-paper">
                   <div className="px-1 py-1 text-[11px] font-extrabold uppercase tracking-wider text-neutral-500">
                     {lang === "ar" ? "المحادثات السابقة" : "Chat History"}
@@ -1758,7 +2221,15 @@
                     conversations.map((conv) => (
                       <div
                         key={conv._id}
+                        role="button"
+                        tabIndex={0}
                         onClick={() => selectConversation(conv._id)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            selectConversation(conv._id);
+                          }
+                        }}
                         className={`group flex items-center justify-between px-3 py-2.5 text-xs font-bold cursor-pointer border-2 transition-all ${
                           activeConversationId === conv._id
                             ? "bg-brandYellow border-line shadow-sm text-ink"
@@ -1767,9 +2238,11 @@
                       >
                         <span className="truncate pl-2" dir="auto">{conv.title || (lang === "ar" ? "محادثة جديدة" : "New chat")}</span>
                         <button
+                          type="button"
                           onClick={(e) => handleDeleteConversation(e, conv._id)}
                           className="opacity-100 md:opacity-0 md:group-hover:opacity-100 p-1 text-ink hover:text-rose-600 transition-opacity"
                           title={lang === "ar" ? "حذف المحادثة" : "Delete conversation"}
+                          aria-label={lang === "ar" ? "حذف المحادثة" : "Delete conversation"}
                         >
                           <Icon name="trash" className="w-3.5 h-3.5" />
                         </button>
@@ -1779,15 +2252,14 @@
                 </div>
               </aside>
 
-              {/* Main Chat Column */}
               <section className="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden chat-grid-bg">
-                {/* Static Desktop Workspace Top Bar */}
                 <div className="hidden md:flex flex-shrink-0 items-center justify-between px-6 py-3 bg-paper border-b-2 border-line">
                   <div className="flex items-center gap-3 min-w-0">
-                    <img
+                    <SafeAvatar
                       src={activeAgent.avatarUrl}
-                      alt=""
-                      className="w-9 h-9 border-2 border-line bg-cream object-cover"
+                      alt={activeAgent.name}
+                      fallbackText={activeAgent.name}
+                      className="w-9 h-9 border-2 border-line bg-cream object-cover text-sm"
                     />
                     <div className="flex items-center gap-2 min-w-0">
                       <h3 className="text-base font-extrabold text-ink truncate" dir="auto">{activeAgent.name}</h3>
@@ -1797,7 +2269,10 @@
                       {agentMemory && (
                         <button
                           type="button"
-                          onClick={() => setShowMemoryModal(true)}
+                          onClick={() => {
+                            setMemoryError("");
+                            setShowMemoryModal(true);
+                          }}
                           className="inline-flex items-center gap-1 px-2 py-0.5 bg-sageMist border border-line text-[10px] font-extrabold text-ink hover:bg-sageMist"
                         >
                           <Icon name="brain" className="w-3 h-3" /> {lang === "ar" ? "ذاكرة التقدم نشطة" : "Memory active"}
@@ -1809,6 +2284,7 @@
                   <button
                     type="button"
                     onClick={() => {
+                      abortActiveStream();
                       setActiveConversationId(null);
                       setMessages([]);
                     }}
@@ -1819,10 +2295,13 @@
                   </button>
                 </div>
 
-                {/* Static Mobile Agent Header */}
                 <div className="md:hidden flex-shrink-0 flex items-center justify-between px-3 py-2 bg-paper border-b-2 border-line gap-2">
                   <button
-                    onClick={() => setView("explore")}
+                    type="button"
+                    onClick={() => {
+                      abortActiveStream();
+                      setView("explore");
+                    }}
                     className="nb-btn flex items-center gap-1 text-xs font-extrabold text-ink py-1 px-2.5 bg-cream"
                   >
                     <Icon name="back" className="w-3.5 h-3.5" />
@@ -1845,10 +2324,12 @@
                     <button
                       type="button"
                       onClick={() => {
+                        abortActiveStream();
                         setActiveConversationId(null);
                         setMessages([]);
                       }}
                       title={lang === "ar" ? "شات جديد" : "New chat"}
+                      aria-label={lang === "ar" ? "شات جديد" : "New chat"}
                       className="nb-btn w-8 h-8 flex items-center justify-center bg-brandBlue text-white"
                     >
                       <Icon name="plus" className="w-4 h-4" />
@@ -1856,7 +2337,6 @@
                   </div>
                 </div>
 
-                {/* ONLY THIS AREA SCROLLS SMOOTHLY */}
                 <div
                   ref={chatContainerRef}
                   className="chat-scroll-area flex-1 min-h-0 px-3 sm:px-7 py-5 sm:py-7"
@@ -1867,13 +2347,13 @@
                         {lang === "ar" ? "جاري تحميل المحادثة..." : "Loading conversation..."}
                       </div>
                     ) : messages.length === 0 ? (
-                      /* Empty State & Starter Prompts */
                       <div className="py-6 sm:py-12 space-y-6">
                         <div className="nb-box-lg p-6 sm:p-8 text-center max-w-xl mx-auto">
-                          <img
+                          <SafeAvatar
                             src={activeAgent.avatarUrl}
                             alt={activeAgent.name}
-                            className="w-20 h-20 mx-auto bg-cream border-2 border-line shadow-sm mb-4"
+                            fallbackText={activeAgent.name}
+                            className="w-20 h-20 mx-auto bg-cream border-2 border-line shadow-sm mb-4 text-2xl object-cover"
                           />
                           <h3 className="text-xl sm:text-2xl font-extrabold text-ink mb-2" dir="auto">
                             {activeAgent.name}
@@ -1897,6 +2377,7 @@
                               {activeAgent.starterPrompts.map((prompt, idx) => (
                                 <button
                                   key={idx}
+                                  type="button"
                                   onClick={() => handleSendMessage(prompt)}
                                   dir="auto"
                                   className="nb-card text-start p-4 text-xs sm:text-sm font-bold text-ink hover:bg-brandYellow"
@@ -1909,7 +2390,6 @@
                         )}
                       </div>
                     ) : (
-                      /* Chat Messages */
                       <div className="space-y-5 pb-2">
                         {messages.map((msg, i) => {
                           if (sendingMessage && msg.role === "model" && !msg.text) return null;
@@ -1918,7 +2398,8 @@
                           return (
                             <div
                               key={msg._id || i}
-                              dir={lang === "ar" ? "rtl" : "ltr"} className={`flex gap-3 min-w-0 ${isUser ? "justify-start" : "justify-end"}`}
+                              dir={lang === "ar" ? "rtl" : "ltr"}
+                              className={`flex gap-3 min-w-0 ${isUser ? "justify-start" : "justify-end"}`}
                             >
                               {isUser && (
                                 <div className="w-8 h-8 flex-shrink-0 bg-brandYellow border-2 border-line shadow-sm flex items-center justify-center font-extrabold text-xs mt-1">
@@ -1927,7 +2408,7 @@
                               )}
                               <div className={`min-w-0 flex flex-col ${isUser ? "items-start max-w-[86%] sm:max-w-[78%]" : "items-end max-w-[calc(100%-44px)] sm:max-w-[90%]"}`}>
                                 <div
-                                  className={`min-w-0 w-full px-4 sm:px-5 py-3.5 border-2 border-line ${
+                                  className={`chat-message-bubble min-w-0 w-full px-4 sm:px-5 py-3.5 border-2 border-line ${
                                     isUser
                                       ? "user-bubble bg-brandBlue text-white shadow-sm"
                                       : "bg-paper text-ink shadow-sm"
@@ -1943,10 +2424,11 @@
                                 )}
                               </div>
                               {!isUser && (
-                                <img
+                                <SafeAvatar
                                   src={activeAgent.avatarUrl}
-                                  alt="AI"
-                                  className="w-8 h-8 bg-paper border-2 border-line shadow-sm flex-shrink-0 mt-1 object-cover"
+                                  alt={activeAgent.name}
+                                  fallbackText={activeAgent.name}
+                                  className="w-8 h-8 bg-paper border-2 border-line shadow-sm flex-shrink-0 mt-1 object-cover text-xs"
                                 />
                               )}
                             </div>
@@ -1954,16 +2436,17 @@
                         })}
 
                         {sendingMessage && messages[messages.length - 1]?.role === "model" && !messages[messages.length - 1]?.text && (
-                          <div dir="rtl" className="flex gap-3 justify-end">
+                          <div dir={lang === "ar" ? "rtl" : "ltr"} className="flex gap-3 justify-end">
                             <div className="nb-box px-4 py-3 flex items-center gap-1.5">
                               <span className="w-2.5 h-2.5 bg-brandYellow border border-line animate-bounce"></span>
                               <span className="w-2.5 h-2.5 bg-brandBlue border border-line animate-bounce" style={{ animationDelay: "150ms" }}></span>
                               <span className="w-2.5 h-2.5 bg-darkPanel animate-bounce" style={{ animationDelay: "300ms" }}></span>
                             </div>
-                            <img
+                            <SafeAvatar
                               src={activeAgent.avatarUrl}
-                              alt="AI"
-                              className="w-8 h-8 bg-paper border-2 border-line flex-shrink-0 object-cover"
+                              alt={activeAgent.name}
+                              fallbackText={activeAgent.name}
+                              className="w-8 h-8 bg-paper border-2 border-line flex-shrink-0 object-cover text-xs"
                             />
                           </div>
                         )}
@@ -1972,7 +2455,6 @@
                   </div>
                 </div>
 
-                {/* Static Bottom Chat Composer */}
                 <div className="chat-composer-wrap flex-shrink-0 px-3 sm:px-7 pt-3 pb-4 bg-paper border-t-2 border-line">
                   <div className="max-w-3xl mx-auto">
                     <div className="nb-box flex items-end gap-2 p-2">
@@ -1992,6 +2474,7 @@
                         className="w-full min-w-0 max-h-[140px] bg-transparent px-3 py-2 text-sm font-bold text-ink placeholder-neutral-500 focus:outline-none resize-none leading-relaxed"
                       />
                       <button
+                        type="button"
                         onClick={() => handleSendMessage()}
                         disabled={!inputMessage.trim() || sendingMessage}
                         aria-label={lang === "ar" ? "إرسال" : "Send"}
@@ -2008,7 +2491,7 @@
           )}
 
           {/* ========================================== */}
-          {/* MOBILE BOTTOM NAVIGATION (Explore/Profile) */}
+          {/* MOBILE BOTTOM NAVIGATION                   */}
           {/* ========================================== */}
           {!isChatView && (
             <nav
@@ -2056,7 +2539,7 @@
           )}
 
           {/* ========================================== */}
-          {/* MODAL 1: SPLIT-SCREEN AUTH (image_1e78fb.jpg) */}
+          {/* MODAL 1: SPLIT-SCREEN AUTH                 */}
           {/* ========================================== */}
           {showAuthModal && (
             <AuthModal
@@ -2065,19 +2548,18 @@
               lang={lang}
               onClose={() => setShowAuthModal(false)}
               onSuccess={(newToken, userData) => {
-                localStorage.setItem("agenttube_token", newToken);
+                safeStorage.set("agenttube_token", newToken);
                 setToken(newToken);
                 setUser(userData);
                 setShowAuthModal(false);
-                notify(lang === "ar" ? `أهلاً بك، ${userData.displayName}!` : `Welcome, ${userData.displayName}!`, "success");
+                notify(lang === "ar" ? `أهلاً بك، ${userData.displayName || userData.username}!` : `Welcome, ${userData.displayName || userData.username}!`, "success");
               }}
               apiFetch={apiFetch}
-              notify={notify}
             />
           )}
 
           {/* ========================================== */}
-          {/* MODAL 2: CREATE AGENT (PROMPT ARCHITECT)   */}
+          {/* MODAL 2: CREATE AGENT                      */}
           {/* ========================================== */}
           {showCreateModal && (
             <CreateAgentModal
@@ -2087,10 +2569,9 @@
                 setShowCreateModal(false);
                 notify(lang === "ar" ? "تم بناء ونشر الوكيل بنجاح!" : "Agent created and published!", "success");
                 fetchAgents();
-                openAgentWorkspace(newAgent.slug);
+                if (newAgent?.slug) openAgentWorkspace(newAgent.slug);
               }}
               apiFetch={apiFetch}
-              notify={notify}
             />
           )}
 
@@ -2099,7 +2580,7 @@
           {/* ========================================== */}
           {showMemoryModal && activeAgent && (
             <div
-              onClick={(e) => { if (e.target === e.currentTarget) setShowMemoryModal(false); }}
+              onClick={(e) => { if (e.target === e.currentTarget && !clearingMemory) setShowMemoryModal(false); }}
               className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 glass-backdrop"
             >
               <div className="nb-box-lg animate-pop w-full max-w-lg p-6 bg-paper">
@@ -2110,7 +2591,13 @@
                     </span>
                     <h3 className="font-extrabold text-base text-ink">{lang === "ar" ? "ذاكرة تقدمك مع" : "Progress memory for"} <bdi>{activeAgent.name}</bdi></h3>
                   </div>
-                  <button onClick={() => setShowMemoryModal(false)} className="p-1 bg-paper border border-line">
+                  <button
+                    type="button"
+                    disabled={clearingMemory}
+                    onClick={() => setShowMemoryModal(false)}
+                    aria-label={lang === "ar" ? "إغلاق" : "Close"}
+                    className="p-1 bg-paper border border-line"
+                  >
                     <Icon name="close" className="w-4 h-4" />
                   </button>
                 </div>
@@ -2119,18 +2606,28 @@
                   {agentMemory || (lang === "ar" ? "لا يوجد ملخص تقدم محفوظ بعد. ابدأ التحدث مع الوكيل وسيتم حفظ مستواك تلقائياً." : "No saved progress yet. Start chatting and this agent will remember your progress.")}
                 </div>
 
+                {memoryError && (
+                  <div className="mt-4">
+                    <InlineAlert message={memoryError} />
+                  </div>
+                )}
+
                 <div className="flex items-center justify-between gap-3 mt-5">
                   {agentMemory ? (
                     <button
                       type="button"
+                      disabled={clearingMemory}
                       onClick={handleClearAgentMemory}
-                      className="nb-btn px-4 py-2 bg-rose-500 text-white text-xs font-extrabold"
+                      className="nb-btn px-4 py-2 bg-rose-500 disabled:opacity-50 text-white text-xs font-extrabold"
                     >
-                      {lang === "ar" ? "تصفير الذاكرة والبدء من الصفر" : "Clear memory and start over"}
+                      {clearingMemory
+                        ? (lang === "ar" ? "جاري التصفير..." : "Clearing...")
+                        : (lang === "ar" ? "تصفير الذاكرة والبدء من الصفر" : "Clear memory and start over")}
                     </button>
                   ) : <span />}
                   <button
                     type="button"
+                    disabled={clearingMemory}
                     onClick={() => setShowMemoryModal(false)}
                     className="nb-btn px-5 py-2 bg-brandYellow text-ink text-xs font-extrabold"
                   >
@@ -2145,7 +2642,7 @@
     }
 
     // ==========================================
-    // Profile Page Component (Neo-Brutalist Style)
+    // Profile Page Component
     // ==========================================
     function ProfilePage({ user, lang, agents, loading, error, onExplore, onCreate, onOpenAgent, onRefresh }) {
       const [filter, setFilter] = useState("");
@@ -2158,17 +2655,16 @@
 
       return (
         <main className="w-full max-w-7xl mx-auto flex-1 px-4 sm:px-6 py-8">
-          {/* Profile Header Card */}
           <section className="nb-box-lg overflow-hidden mb-8">
             <div className="h-28 sm:h-36 bg-darkPanel px-6 pt-5 flex items-start justify-between">
               <span className="px-3 py-1 bg-brandYellow border border-line text-ink text-xs font-extrabold">
                 {lang === "ar" ? "ملف صانع الوكلاء" : "Creator Profile"}
               </span>
               <div className="flex gap-2">
-                <button onClick={onExplore} className="nb-btn px-3.5 py-1.5 bg-paper text-ink text-xs font-extrabold">
+                <button type="button" onClick={onExplore} className="nb-btn px-3.5 py-1.5 bg-paper text-ink text-xs font-extrabold">
                   {lang === "ar" ? "المنصة" : "Explore"}
                 </button>
-                <button onClick={onCreate} className="nb-btn px-3.5 py-1.5 bg-brandBlue text-white text-xs font-extrabold flex items-center gap-1">
+                <button type="button" onClick={onCreate} className="nb-btn px-3.5 py-1.5 bg-brandBlue text-white text-xs font-extrabold flex items-center gap-1">
                   <Icon name="plus" className="w-3.5 h-3.5" /> {lang === "ar" ? "وكيل جديد" : "New agent"}
                 </button>
               </div>
@@ -2177,10 +2673,11 @@
             <div className="px-6 pb-7 bg-paper">
               <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 -mt-12 mb-5">
                 <div className="flex items-end gap-4">
-                  <img
+                  <SafeAvatar
                     src={user.avatarUrl}
                     alt={name}
-                    className="w-24 h-24 bg-brandYellow border-2 border-line shadow-sm object-cover"
+                    fallbackText={name}
+                    className="w-24 h-24 bg-brandYellow border-2 border-line shadow-sm object-cover text-3xl"
                   />
                   <div className="pb-1">
                     <h1 className="text-2xl sm:text-3xl font-extrabold text-ink" dir="auto">{name}</h1>
@@ -2206,10 +2703,9 @@
             </div>
           </section>
 
-          {/* User's Published Agents */}
           <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
             <h2 className="text-xl sm:text-2xl font-extrabold text-ink">{lang === "ar" ? "وكلائي المنشورون" : "My published agents"}</h2>
-            <button onClick={onRefresh} disabled={loading} className="nb-btn px-3.5 py-1.5 bg-paper text-xs font-extrabold inline-flex items-center gap-1.5">
+            <button type="button" onClick={onRefresh} disabled={loading} className="nb-btn px-3.5 py-1.5 bg-paper text-xs font-extrabold inline-flex items-center gap-1.5">
               <Icon name="refresh" className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} /> {lang === "ar" ? "تحديث" : "Refresh"}
             </button>
           </div>
@@ -2230,15 +2726,15 @@
               {[1, 2, 3].map((i) => <div key={i} className="nb-box h-48 animate-pulse" />)}
             </div>
           ) : error ? (
-            <div className="nb-box p-8 text-center">
-              <p className="font-bold text-rose-600 mb-3">{error}</p>
-              <button onClick={onRefresh} className="nb-btn px-4 py-2 bg-brandYellow text-xs font-extrabold">{lang === "ar" ? "إعادة المحاولة" : "Try again"}</button>
+            <div className="nb-box p-8 text-center space-y-4">
+              <InlineAlert message={error} />
+              <button type="button" onClick={onRefresh} className="nb-btn px-4 py-2 bg-brandYellow text-xs font-extrabold">{lang === "ar" ? "إعادة المحاولة" : "Try again"}</button>
             </div>
           ) : visibleAgents.length === 0 ? (
             <div className="nb-box p-10 text-center">
               <h3 className="text-lg font-extrabold text-ink mb-2">{lang === "ar" ? "لا يوجد وكلاء منشورون بعد" : "No agents published yet"}</h3>
               <p className="text-sm font-semibold text-neutral-600 mb-5">{lang === "ar" ? "ابدأ ببناء أول وكيل ذكي مخصص لك الآن." : "Create your first custom AI agent."}</p>
-              <button onClick={onCreate} className="nb-btn px-5 py-2.5 bg-brandBlue text-white text-sm font-extrabold inline-flex items-center gap-2">
+              <button type="button" onClick={onCreate} className="nb-btn px-5 py-2.5 bg-brandBlue text-white text-sm font-extrabold inline-flex items-center gap-2">
                 <Icon name="plus" className="w-4 h-4" /> {lang === "ar" ? "إنشاء أول وكيل" : "Create your first agent"}
               </button>
             </div>
@@ -2253,7 +2749,12 @@
                 >
                   <div>
                     <div className="flex items-center gap-3 mb-3">
-                      <img src={agent.avatarUrl} alt="" className="w-12 h-12 border-2 border-line bg-cream" />
+                      <SafeAvatar
+                        src={agent.avatarUrl}
+                        alt={agent.name}
+                        fallbackText={agent.name}
+                        className="w-12 h-12 border-2 border-line bg-cream object-cover text-base"
+                      />
                       <div className="min-w-0 flex-1">
                         <h3 className="font-extrabold text-base text-ink truncate" dir="auto">{agent.name}</h3>
                         <span className="px-2 py-0.5 bg-brandYellow border border-line text-[10px] font-extrabold">{agent.category}</span>
@@ -2262,7 +2763,10 @@
                     <p className="text-xs font-semibold text-neutral-700 line-clamp-2 mb-4" dir="auto">{agent.description}</p>
                   </div>
                   <div className="pt-3 border-t-2 border-line w-full flex items-center justify-between text-xs font-extrabold">
-                    <span>👁 {agent.viewsCount || 0} {lang === "ar" ? "مشاهدة" : "views"}</span>
+                    <span className="inline-flex items-center gap-1">
+                      <Icon name="eye" className="w-3.5 h-3.5" />
+                      {agent.viewsCount || 0} {lang === "ar" ? "مشاهدة" : "views"}
+                    </span>
                     <span className="text-brandBlue">{lang === "ar" ? "فتح مساحة العمل" : "Open workspace"}</span>
                   </div>
                 </button>
@@ -2274,9 +2778,9 @@
     }
 
     // ==========================================
-    // Split-Screen Auth Modal (Matching image_1e78fb.jpg)
+    // Split-Screen Auth Modal (With Inline Error Display)
     // ==========================================
-    function AuthModal({ mode, setMode, lang, onClose, onSuccess, apiFetch, notify }) {
+    function AuthModal({ mode, setMode, lang, onClose, onSuccess, apiFetch }) {
       const [form, setForm] = useState({
         username: "",
         displayName: "",
@@ -2285,25 +2789,51 @@
         bio: "",
       });
       const [loading, setLoading] = useState(false);
+      const [formError, setFormError] = useState("");
 
       useEffect(() => {
-        const onKey = (e) => { if (e.key === "Escape") onClose(); };
+        setFormError("");
+      }, [mode]);
+
+      useEffect(() => {
+        const onKey = (e) => { if (e.key === "Escape" && !loading) onClose(); };
         document.addEventListener("keydown", onKey);
         return () => document.removeEventListener("keydown", onKey);
-      }, [onClose]);
+      }, [onClose, loading]);
+
+      const updateField = (key, value) => {
+        if (formError) setFormError("");
+        setForm((prev) => ({ ...prev, [key]: value }));
+      };
 
       const handleSubmit = async (e) => {
         e.preventDefault();
+        setFormError("");
         setLoading(true);
+        const context = mode === "login" ? "auth_login" : "auth_register";
         try {
           const endpoint = mode === "login" ? "/api/auth/login" : "/api/auth/register";
+          const payload = mode === "login"
+            ? { email: form.email.trim(), password: form.password }
+            : {
+                username: form.username.trim(),
+                displayName: form.displayName.trim(),
+                email: form.email.trim(),
+                password: form.password,
+                bio: form.bio.trim(),
+              };
+
           const res = await apiFetch(endpoint, {
             method: "POST",
-            body: JSON.stringify(form),
-          });
+            body: JSON.stringify(payload),
+          }, context);
+
+          if (!res.token || !res.user) {
+            throw new AppError("SERVER_UNAVAILABLE", 500, context);
+          }
           onSuccess(res.token, res.user);
         } catch (err) {
-          notify(err.message, "error");
+          setFormError(getFriendlyError(err, lang, context));
         } finally {
           setLoading(false);
         }
@@ -2311,16 +2841,15 @@
 
       return (
         <div
-          onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+          onClick={(e) => { if (e.target === e.currentTarget && !loading) onClose(); }}
           className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/60 glass-backdrop overflow-y-auto"
         >
-          {/* Split-Screen Box matching image_1e78fb.jpg */}
           <div className="nb-box-lg animate-pop w-full max-w-4xl grid grid-cols-1 lg:grid-cols-2 overflow-hidden my-auto">
-            {/* Form Side (Warm Cream #F6F5F0) */}
             <div className="bg-paper p-6 sm:p-9 flex flex-col justify-between">
               <div className="flex items-center justify-between mb-6">
                 <button
                   type="button"
+                  disabled={loading}
                   onClick={onClose}
                   className="nb-btn px-3 py-1 bg-paper text-xs font-extrabold text-ink inline-flex items-center gap-1"
                 >
@@ -2350,10 +2879,11 @@
                         <input
                           type="text"
                           required
+                          autoComplete="username"
                           dir="ltr"
                           placeholder="ahmed_ai"
                           value={form.username}
-                          onChange={(e) => setForm({ ...form, username: e.target.value })}
+                          onChange={(e) => updateField("username", e.target.value)}
                           className="nb-input w-full px-3.5 py-2.5 text-sm font-bold"
                         />
                       </div>
@@ -2362,10 +2892,11 @@
                         <input
                           type="text"
                           required
+                          autoComplete="name"
                           placeholder={lang === "ar" ? "أحمد محمد" : "Your full name"}
                           dir="auto"
                           value={form.displayName}
-                          onChange={(e) => setForm({ ...form, displayName: e.target.value })}
+                          onChange={(e) => updateField("displayName", e.target.value)}
                           className="nb-input w-full px-3.5 py-2.5 text-sm font-bold"
                         />
                       </div>
@@ -2377,10 +2908,11 @@
                     <input
                       type="email"
                       required
+                      autoComplete="email"
                       dir="ltr"
                       placeholder="you@example.com"
                       value={form.email}
-                      onChange={(e) => setForm({ ...form, email: e.target.value })}
+                      onChange={(e) => updateField("email", e.target.value)}
                       className="nb-input w-full px-3.5 py-2.5 text-sm font-bold"
                     />
                   </div>
@@ -2391,13 +2923,17 @@
                       type="password"
                       required
                       minLength={6}
+                      autoComplete={mode === "login" ? "current-password" : "new-password"}
                       dir="ltr"
                       placeholder="••••••••"
                       value={form.password}
-                      onChange={(e) => setForm({ ...form, password: e.target.value })}
+                      onChange={(e) => updateField("password", e.target.value)}
                       className="nb-input w-full px-3.5 py-2.5 text-sm font-bold"
                     />
                   </div>
+
+                  {/* Visible inline error directly inside the auth form */}
+                  <InlineAlert message={formError} />
 
                   <button
                     type="submit"
@@ -2412,14 +2948,14 @@
                   {mode === "login" ? (
                     <span>
                       {lang === "ar" ? "ليس لديك حساب بعد؟" : "New to AgentTube?"}{" "}
-                      <button onClick={() => setMode("register")} className="text-brandBlue underline font-extrabold">
+                      <button type="button" onClick={() => setMode("register")} className="text-brandBlue underline font-extrabold">
                         {lang === "ar" ? "أنشئ حسابك الآن" : "Create an account"}
                       </button>
                     </span>
                   ) : (
                     <span>
                       {lang === "ar" ? "لديك حساب بالفعل؟" : "Already have an account?"}{" "}
-                      <button onClick={() => setMode("login")} className="text-brandBlue underline font-extrabold">
+                      <button type="button" onClick={() => setMode("login")} className="text-brandBlue underline font-extrabold">
                         {lang === "ar" ? "تسجيل الدخول" : "Sign in"}
                       </button>
                     </span>
@@ -2432,8 +2968,7 @@
               </div>
             </div>
 
-            {/* Dark Showcase Side (Matching Right Black Panel of image_1e78fb.jpg) */}
-            <div className="hidden lg:flex flex-col justify-between bg-darkPanel text-white p-9 border-r-2 border-line">
+            <div className="hidden lg:flex flex-col justify-between bg-darkPanel text-white p-9 lg:border-s-2 border-line">
               <div>
                 <h3 className="text-3xl font-extrabold leading-tight mb-3">
                   {lang === "ar" ? "ابنِ وكلاء يشتغلوا فعلاً." : "Create AI agents that really work."}
@@ -2443,7 +2978,6 @@
                 </p>
               </div>
 
-              {/* Architectural Production Diagram Card matching image_1e78fb.jpg */}
               <div className="bg-paper text-ink border-2 border-white p-5 shadow-sm">
                 <div className="flex items-center justify-between border-b-2 border-line pb-3 mb-4">
                   <div className="flex gap-1.5">
@@ -2480,9 +3014,9 @@
     }
 
     // ==========================================
-    // Create Agent Modal (Neo-Brutalist Style)
+    // Create Agent Modal (With Inline Error Display)
     // ==========================================
-    function CreateAgentModal({ lang, onClose, onCreated, apiFetch, notify }) {
+    function CreateAgentModal({ lang, onClose, onCreated, apiFetch }) {
       const [form, setForm] = useState({
         name: "",
         description: "",
@@ -2494,6 +3028,7 @@
         isPublic: true,
       });
       const [loading, setLoading] = useState(false);
+      const [formError, setFormError] = useState("");
 
       useEffect(() => {
         const onKey = (e) => { if (e.key === "Escape" && !loading) onClose(); };
@@ -2501,8 +3036,14 @@
         return () => document.removeEventListener("keydown", onKey);
       }, [onClose, loading]);
 
+      const updateField = (key, value) => {
+        if (formError) setFormError("");
+        setForm((prev) => ({ ...prev, [key]: value }));
+      };
+
       const handleSubmit = async (e) => {
         e.preventDefault();
+        setFormError("");
         setLoading(true);
         try {
           const starterPrompts = [form.starter1, form.starter2]
@@ -2511,20 +3052,22 @@
 
           const res = await apiFetch("/api/agents", {
             method: "POST",
+            timeoutMs: BUILD_AGENT_TIMEOUT_MS,
             body: JSON.stringify({
-              name: form.name,
-              description: form.description,
+              name: form.name.trim(),
+              description: form.description.trim(),
               category: form.category,
-              rawPrompt: form.rawPrompt,
+              rawPrompt: form.rawPrompt.trim(),
               temperature: Number(form.temperature),
               enableWebSearch: false,
               isPublic: form.isPublic,
               starterPrompts,
             }),
-          });
+          }, "create_agent");
+
           onCreated(res.data);
         } catch (err) {
-          notify(err.message, "error");
+          setFormError(getFriendlyError(err, lang, "create_agent"));
         } finally {
           setLoading(false);
         }
@@ -2549,8 +3092,10 @@
                 </div>
               </div>
               <button
+                type="button"
                 onClick={onClose}
                 disabled={loading}
+                aria-label={lang === "ar" ? "إغلاق" : "Close"}
                 className="nb-btn p-1.5 bg-paper text-ink"
               >
                 <Icon name="close" className="w-4 h-4" />
@@ -2567,7 +3112,7 @@
                     dir="auto"
                     placeholder={lang === "ar" ? "مثال: مدرس بايثون العربي" : "e.g. Python Tutor"}
                     value={form.name}
-                    onChange={(e) => setForm({ ...form, name: e.target.value })}
+                    onChange={(e) => updateField("name", e.target.value)}
                     className="nb-input w-full px-3.5 py-2.5 text-sm font-bold"
                   />
                 </div>
@@ -2575,7 +3120,7 @@
                   <label className="block text-xs font-extrabold text-ink mb-1">{lang === "ar" ? "التصنيف" : "Category"}</label>
                   <select
                     value={form.category}
-                    onChange={(e) => setForm({ ...form, category: e.target.value })}
+                    onChange={(e) => updateField("category", e.target.value)}
                     className="nb-input w-full px-3 py-2.5 text-sm font-bold"
                   >
                     {CATEGORIES.filter((c) => c.id !== "All").map((cat) => (
@@ -2593,7 +3138,7 @@
                   dir="auto"
                   placeholder={lang === "ar" ? "ماذا يقدم هذا الوكيل للمستخدم؟" : "What does your agent help people do?"}
                   value={form.description}
-                  onChange={(e) => setForm({ ...form, description: e.target.value })}
+                  onChange={(e) => updateField("description", e.target.value)}
                   className="nb-input w-full px-3.5 py-2.5 text-sm font-bold"
                 />
               </div>
@@ -2608,7 +3153,7 @@
                   dir="auto"
                   placeholder={lang === "ar" ? "اشرح دور الوكيل، أسلوبه في الشرح أو العمل، والقواعد التي يجب أن يلتزم بها..." : "Describe the agent’s role, tone, goals and guidelines..."}
                   value={form.rawPrompt}
-                  onChange={(e) => setForm({ ...form, rawPrompt: e.target.value })}
+                  onChange={(e) => updateField("rawPrompt", e.target.value)}
                   className="nb-input w-full px-3.5 py-2.5 text-sm font-bold leading-relaxed"
                 />
               </div>
@@ -2621,7 +3166,7 @@
                     dir="auto"
                     placeholder={lang === "ar" ? "مثال: ابدأ معي من الصفر" : "e.g. Teach me from scratch"}
                     value={form.starter1}
-                    onChange={(e) => setForm({ ...form, starter1: e.target.value })}
+                    onChange={(e) => updateField("starter1", e.target.value)}
                     className="nb-input w-full px-3 py-2 text-xs font-bold"
                   />
                 </div>
@@ -2632,13 +3177,12 @@
                     dir="auto"
                     placeholder={lang === "ar" ? "مثال: اختبر مستواي وصمم لي خطة" : "e.g. Assess my level and make a plan"}
                     value={form.starter2}
-                    onChange={(e) => setForm({ ...form, starter2: e.target.value })}
+                    onChange={(e) => updateField("starter2", e.target.value)}
                     className="nb-input w-full px-3 py-2 text-xs font-bold"
                   />
                 </div>
               </div>
 
-              {/* Agent creativity settings */}
               <div className="nb-box p-4">
                 <div>
                   <div className="flex items-center justify-between text-xs mb-2">
@@ -2652,7 +3196,7 @@
                         <button
                           key={preset.label}
                           type="button"
-                          onClick={() => setForm({ ...form, temperature: preset.val })}
+                          onClick={() => updateField("temperature", preset.val)}
                           className={`px-2 py-0.5 border border-line text-[10px] font-extrabold ${
                             Number(form.temperature) === preset.val
                               ? "bg-brandYellow text-ink"
@@ -2671,11 +3215,14 @@
                     max="1.5"
                     step="0.1"
                     value={form.temperature}
-                    onChange={(e) => setForm({ ...form, temperature: e.target.value })}
+                    onChange={(e) => updateField("temperature", e.target.value)}
                     className="w-full accent-ink cursor-pointer"
                   />
                 </div>
               </div>
+
+              {/* Visible inline error directly inside the create-agent form */}
+              <InlineAlert message={formError} />
 
               <button
                 type="submit"
@@ -2701,7 +3248,11 @@
     }
 
     const root = ReactDOM.createRoot(document.getElementById("root"));
-    root.render(<App />);
+    root.render(
+      <ErrorBoundary>
+        <App />
+      </ErrorBoundary>
+    );
   </script>
 </body>
 
