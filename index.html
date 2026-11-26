@@ -211,10 +211,27 @@
     }
     @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     .animate-pop { animation: slideUp .23s ease-out forwards; }
+
+    @keyframes skeletonShimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+    .skeleton-shimmer {
+      background: linear-gradient(
+        90deg,
+        var(--bg-stone-soft) 25%,
+        #F8F7F2 50%,
+        var(--bg-stone-soft) 75%
+      );
+      background-size: 200% 100%;
+      animation: skeletonShimmer 1.6s ease-in-out infinite;
+    }
+
     @media (prefers-reduced-motion: reduce) {
       html { scroll-behavior: auto; }
       .animate-pop { animation: none; }
       .nb-card, .nb-btn { transition-duration: 0ms; }
+      .skeleton-shimmer { animation: none; }
     }
 
     .chat-rich { min-width: 0; color: var(--text-slate-ink); line-height: 1.82; overflow-wrap: anywhere; text-align: start; }
@@ -984,6 +1001,192 @@
     };
 
     // ==========================================
+    // Skeleton Card (Used in Catalog & Boot Screen)
+    // ==========================================
+    function AgentCardSkeleton() {
+      return (
+        <div className="nb-box overflow-hidden flex flex-col justify-between" aria-hidden="true">
+          <div className="agent-card-banner p-5 border-b border-line bg-creamDark/70 flex items-center justify-between gap-4 min-h-[132px]">
+            <div className="flex-1 space-y-2.5">
+              <div className="h-4 w-20 rounded-md skeleton-shimmer" />
+              <div className="h-5 w-4/5 rounded-md skeleton-shimmer" />
+              <div className="h-5 w-3/5 rounded-md skeleton-shimmer" />
+            </div>
+            <div className="w-16 h-16 rounded-xl border-2 border-line skeleton-shimmer flex-shrink-0" />
+          </div>
+
+          <div className="p-5 bg-paper flex-1 flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <div className="h-3.5 w-24 rounded skeleton-shimmer" />
+                <div className="h-3.5 w-10 rounded skeleton-shimmer" />
+              </div>
+              <div className="space-y-2 mb-5">
+                <div className="h-3.5 w-full rounded skeleton-shimmer" />
+                <div className="h-3.5 w-5/6 rounded skeleton-shimmer" />
+              </div>
+            </div>
+
+            <div className="pt-3 border-t-2 border-line flex items-center justify-between">
+              <div className="h-6 w-28 rounded-md skeleton-shimmer" />
+              <div className="h-5 w-20 rounded-md skeleton-shimmer" />
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // ==========================================
+    // Full-Page Skeleton (Initial Load & Sleeping/Offline Server)
+    // ==========================================
+    function ServerWakeSkeleton({ status, attempt, maxAttempts, seconds, lang, setLang, onRetry }) {
+      const isAr = lang === "ar";
+      const isOffline = status === "offline";
+      const isWaking = status === "waking";
+
+      return (
+        <div className="min-h-[100dvh] flex flex-col bg-cream text-ink">
+          {/* Header */}
+          <header className="sticky top-0 z-30 bg-cream border-b-2 border-line">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-6">
+                <BrandLogo />
+                <div className="hidden md:flex items-center gap-5" aria-hidden="true">
+                  <div className="h-3.5 w-20 rounded skeleton-shimmer" />
+                  <div className="h-3.5 w-16 rounded skeleton-shimmer" />
+                  <div className="h-3.5 w-20 rounded skeleton-shimmer" />
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => setLang(isAr ? "en" : "ar")}
+                  className="nb-btn px-3 py-1.5 bg-paper text-xs font-extrabold text-ink flex items-center gap-1.5"
+                >
+                  <span>{isAr ? "EN" : "عربي"}</span>
+                  <Icon name="globe" className="w-3.5 h-3.5" />
+                </button>
+                <div className="hidden sm:block h-8 w-28 rounded-xl skeleton-shimmer" aria-hidden="true" />
+                <div className="h-8 w-24 rounded-xl skeleton-shimmer" aria-hidden="true" />
+              </div>
+            </div>
+          </header>
+
+          <main className="flex-1">
+            {/* Smart Status Banner (Appears if server is waking up or offline) */}
+            {(isWaking || isOffline) && (
+              <div className="max-w-3xl mx-auto px-4 sm:px-6 pt-6 animate-pop">
+                <div
+                  role="status"
+                  aria-live="polite"
+                  className={`nb-box p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 ${
+                    isOffline ? "border-rose-300 bg-rose-50/70" : "bg-paper"
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <span className="relative flex h-3.5 w-3.5 mt-1.5 flex-shrink-0">
+                      {!isOffline && (
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brandBlue opacity-60" />
+                      )}
+                      <span
+                        className={`relative inline-flex rounded-full h-3.5 w-3.5 ${
+                          isOffline ? "bg-rose-500" : "bg-brandBlue"
+                        }`}
+                      />
+                    </span>
+                    <div>
+                      <h2 className="text-sm sm:text-base font-extrabold text-ink">
+                        {isOffline
+                          ? (isAr ? "الخادم متوقف أو غير متاح حالياً" : "Server is currently unavailable")
+                          : (isAr ? "جاري تشغيل الخادم من وضع السكون..." : "Waking up the server...")}
+                      </h2>
+                      <p className="text-xs sm:text-sm font-semibold text-neutral-600 mt-0.5 leading-relaxed">
+                        {isOffline
+                          ? (isAr
+                              ? "تعذر الاتصال بالخادم حالياً. تأكد من اتصالك بالإنترنت أو أعد المحاولة بعد لحظات."
+                              : "Couldn't reach the server right now. Check your connection or try again shortly.")
+                          : (isAr
+                              ? `قد يستغرق تشغيل الخادم أول مرة من 15 إلى 45 ثانية — المحاولة ${attempt} من ${maxAttempts} (${seconds}ث)`
+                              : `Cold start usually takes 15–45 seconds — Attempt ${attempt} of ${maxAttempts} (${seconds}s)`)}
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={onRetry}
+                    className={`nb-btn px-4 py-2 text-xs font-extrabold inline-flex items-center gap-1.5 flex-shrink-0 ${
+                      isOffline
+                        ? "bg-brandBlue hover:bg-brandBlueHover text-white"
+                        : "bg-brandYellow text-ink"
+                    }`}
+                  >
+                    <Icon name="refresh" className={`w-3.5 h-3.5 ${isWaking ? "animate-spin" : ""}`} />
+                    <span>{isOffline ? (isAr ? "إعادة المحاولة" : "Try Again") : (isAr ? "تحديث" : "Retry")}</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Hero Skeleton */}
+            <section className="max-w-5xl mx-auto px-4 sm:px-6 pt-10 pb-14 text-center" aria-hidden="true">
+              <div className="h-7 w-40 mx-auto rounded-lg skeleton-shimmer mb-6" />
+              <div className="space-y-3 max-w-2xl mx-auto mb-6">
+                <div className="h-10 sm:h-12 w-11/12 mx-auto rounded-xl skeleton-shimmer" />
+                <div className="h-10 sm:h-12 w-3/4 mx-auto rounded-xl skeleton-shimmer" />
+              </div>
+              <div className="space-y-2 max-w-xl mx-auto mb-8">
+                <div className="h-4 w-full rounded skeleton-shimmer" />
+                <div className="h-4 w-4/5 mx-auto rounded skeleton-shimmer" />
+              </div>
+
+              <div className="flex flex-wrap items-center justify-center gap-3.5 mb-12">
+                <div className="h-12 w-48 rounded-xl skeleton-shimmer" />
+                <div className="h-12 w-44 rounded-xl skeleton-shimmer" />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-3xl mx-auto">
+                {[1, 2, 3].map((n) => (
+                  <div key={n} className="nb-box py-6 px-4 flex flex-col items-center gap-2.5">
+                    <div className="h-8 w-20 rounded-lg skeleton-shimmer" />
+                    <div className="h-3.5 w-32 rounded skeleton-shimmer" />
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            {/* Catalog Skeleton */}
+            <section className="bg-catalogGray border-y-2 border-line py-12 sm:py-16" aria-hidden="true">
+              <div className="max-w-7xl mx-auto px-4 sm:px-6">
+                <div className="nb-box p-4 sm:p-6 mb-8">
+                  <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <div className="h-7 w-28 rounded-lg skeleton-shimmer" />
+                      <div className="h-7 w-56 rounded-lg skeleton-shimmer" />
+                    </div>
+                    <div className="h-10 w-full lg:w-80 rounded-xl skeleton-shimmer" />
+                  </div>
+                  <div className="flex items-center gap-2 pt-4 mt-4 border-t-2 border-line overflow-hidden">
+                    {[1, 2, 3, 4, 5, 6].map((n) => (
+                      <div key={n} className="h-8 w-20 rounded-lg skeleton-shimmer flex-shrink-0" />
+                    ))}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {[1, 2, 3, 4, 5, 6].map((n) => (
+                    <AgentCardSkeleton key={n} />
+                  ))}
+                </div>
+              </div>
+            </section>
+          </main>
+        </div>
+      );
+    }
+
+    // ==========================================
     // Main Application Component
     // ==========================================
     function App() {
@@ -1005,6 +1208,15 @@
       const [selectedCategory, setSelectedCategory] = useState("All");
       const [searchQuery, setSearchQuery] = useState("");
       const [openFaqIndex, setOpenFaqIndex] = useState(0);
+
+      // Server Boot / Wake-Up State
+      const MAX_WAKE_ATTEMPTS = 3;
+      const [serverStatus, setServerStatus] = useState("checking"); // "checking" | "waking" | "ready" | "offline"
+      const [wakeAttempt, setWakeAttempt] = useState(1);
+      const [wakeSeconds, setWakeSeconds] = useState(0);
+      const [bootTrigger, setBootTrigger] = useState(0);
+      const hasBootedRef = useRef(false);
+      const isFirstReadyRef = useRef(true);
 
       // Profile State
       const [profileAgents, setProfileAgents] = useState([]);
@@ -1172,10 +1384,87 @@
         }
       }, [token, clearSession]);
 
-      // 1. Fetch Current User
+      // Initial Server Wake-Up & Boot Check
       useEffect(() => {
-        if (!token) {
-          setUser(null);
+        if (hasBootedRef.current) return;
+
+        let cancelled = false;
+        const controller = new AbortController();
+        let retryTimeout = null;
+
+        setServerStatus("checking");
+        setWakeAttempt(1);
+        setWakeSeconds(0);
+
+        const timer = setInterval(() => {
+          setWakeSeconds((prev) => {
+            const next = prev + 1;
+            if (next >= 3) {
+              setServerStatus((curr) => (curr === "checking" ? "waking" : curr));
+            }
+            return next;
+          });
+        }, 1000);
+
+        const wakeServer = async () => {
+          if (typeof navigator !== "undefined" && navigator.onLine === false) {
+            setServerStatus("offline");
+            setLoadingAgents(false);
+            clearInterval(timer);
+            return;
+          }
+
+          for (let attempt = 1; attempt <= MAX_WAKE_ATTEMPTS; attempt++) {
+            if (cancelled) return;
+            setWakeAttempt(attempt);
+
+            try {
+              const res = await apiFetch(
+                "/api/agents",
+                { signal: controller.signal, timeoutMs: REQUEST_TIMEOUT_MS },
+                "load_agents"
+              );
+              if (cancelled) return;
+
+              hasBootedRef.current = true;
+              setAgents(Array.isArray(res.data) ? res.data : []);
+              setAgentsLoadFailed(false);
+              setLoadingAgents(false);
+              setServerStatus("ready");
+              clearInterval(timer);
+              return;
+            } catch (err) {
+              if (cancelled || (err?.name === "AbortError" && !(err instanceof AppError))) return;
+
+              if (attempt < MAX_WAKE_ATTEMPTS) {
+                setServerStatus("waking");
+                await new Promise((resolve) => {
+                  retryTimeout = setTimeout(resolve, 3000);
+                });
+              } else {
+                setServerStatus("offline");
+                setAgentsLoadFailed(true);
+                setLoadingAgents(false);
+                clearInterval(timer);
+              }
+            }
+          }
+        };
+
+        wakeServer();
+
+        return () => {
+          cancelled = true;
+          controller.abort();
+          clearInterval(timer);
+          clearTimeout(retryTimeout);
+        };
+      }, [bootTrigger, apiFetch]);
+
+      // 1. Fetch Current User (once server wakes up)
+      useEffect(() => {
+        if (!token || serverStatus !== "ready") {
+          if (!token) setUser(null);
           return;
         }
         let cancelled = false;
@@ -1190,9 +1479,9 @@
             }
           });
         return () => { cancelled = true; };
-      }, [token, apiFetch, clearSession]);
+      }, [token, serverStatus, apiFetch, clearSession]);
 
-      // 2. Fetch Agents
+      // 2. Fetch Agents (on category/search change after initial boot)
       const fetchAgents = useCallback(async () => {
         agentsAbortRef.current?.abort();
         const controller = new AbortController();
@@ -1223,9 +1512,14 @@
       }, [selectedCategory, searchQuery, apiFetch, lang, notify]);
 
       useEffect(() => {
+        if (serverStatus !== "ready") return;
+        if (isFirstReadyRef.current) {
+          isFirstReadyRef.current = false;
+          return;
+        }
         const timer = setTimeout(fetchAgents, 250);
         return () => clearTimeout(timer);
-      }, [fetchAgents]);
+      }, [serverStatus, fetchAgents]);
 
       const loadProfileAgents = async (account) => {
         setProfileLoading(true);
@@ -1558,6 +1852,20 @@
         if (view === "profile") setView("explore");
         notify(lang === "ar" ? "تم تسجيل الخروج بنجاح" : "Signed out successfully");
       };
+
+      if (serverStatus !== "ready") {
+        return (
+          <ServerWakeSkeleton
+            status={serverStatus}
+            attempt={wakeAttempt}
+            maxAttempts={MAX_WAKE_ATTEMPTS}
+            seconds={wakeSeconds}
+            lang={lang}
+            setLang={setLang}
+            onRetry={() => setBootTrigger((n) => n + 1)}
+          />
+        );
+      }
 
       const isChatView = view === "chat";
       const totalViewsAll = agents.reduce((acc, a) => acc + (Number(a.viewsCount) || 0), 0);
@@ -1911,7 +2219,7 @@
                   {loadingAgents ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                       {[1, 2, 3, 4, 5, 6].map((n) => (
-                        <div key={n} className="nb-box h-72 animate-pulse bg-paper" />
+                        <AgentCardSkeleton key={n} />
                       ))}
                     </div>
                   ) : agentsLoadFailed && agents.length === 0 ? (
