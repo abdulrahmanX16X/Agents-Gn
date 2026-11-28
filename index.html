@@ -7,6 +7,10 @@
   <meta name="description" content="AgentTube — منصة لبناء ومشاركة وكلاء الذكاء الاصطناعي بالعربية والإنجليزية مع ذاكرة تراكمية وهندسة أوامر دقيقة." />
   <meta name="theme-color" content="#F6F5F0" />
   <meta name="referrer" content="strict-origin-when-cross-origin" />
+  <meta
+    http-equiv="Content-Security-Policy"
+    content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com https://www.googletagmanager.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net data:; img-src 'self' https://api.dicebear.com https://www.google-analytics.com data: blob:; connect-src 'self' https://agents-377s.onrender.com https://www.google-analytics.com https://region1.google-analytics.com https://unpkg.com https://cdn.jsdelivr.net; object-src 'none'; base-uri 'self'; form-action 'self';"
+  />
   <meta property="og:title" content="AgentTube — AI Agent Studio" />
   <meta property="og:description" content="منصة وكلاء ذكاء اصطناعي للمستخدم العربي: برومبتات هندسية دقيقة وذاكرة تراكمية تحفظ تقدمك." />
   <meta property="og:type" content="website" />
@@ -366,12 +370,30 @@
   <script type="text/babel">
     const { useState, useEffect, useRef, useCallback } = React;
 
+    /* =========================================================================
+       AgentTube Frontend — Table of Contents
+       -------------------------------------------------------------------------
+       1. Config, Storage & Error Classification
+       2. UI Constants (Categories, Card Themes, FAQ)
+       3. Shared UI Primitives (InlineAlert, ErrorBoundary, SafeAvatar, Icons)
+       4. Markdown, Code & Math Message Rendering
+       5. Skeleton Loaders (AgentCardSkeleton, ServerWakeSkeleton)
+       6. URL Routing & Share Helpers
+       7. Main Application State & API Orchestration (App)
+       8. Layout & Navigation Components (TopNavbar, MobileBottomNav)
+       9. Page Views (AgentCard, ExplorePage, ChatWorkspace, ProfilePage)
+      10. Modals (MemoryModal, AuthModal, CreateAgentModal)
+      11. ReactDOM Mount
+       ========================================================================= */
+
     // ==========================================
-    // Production Config & Safe Utilities
+    // 1. Config, Storage & Error Classification
     // ==========================================
     const API_BASE = "https://agents-377s.onrender.com";
     const REQUEST_TIMEOUT_MS = 25000;
     const BUILD_AGENT_TIMEOUT_MS = 65000;
+    const BUILD_AGENT_PDF_TIMEOUT_MS = 180000;
+    const MAX_PDF_SIZE_BYTES = 50 * 1024 * 1024;
 
     const safeStorage = {
       get(key, fallback = "") {
@@ -419,6 +441,11 @@
         if (context === "auth_register" && /exist|duplicate|already|taken|مستخدم|مسجل/i.test(hint)) {
           return "CONFLICT";
         }
+        if (context === "create_agent") {
+          if (/\b(?:20|50)\s*mb|file size|exceed|limit_file_size/i.test(hint)) return "PDF_TOO_LARGE";
+          if (/only pdf|pdf files are allowed|mimetype/i.test(hint)) return "PDF_INVALID_TYPE";
+          if (/educational/i.test(hint)) return "PDF_EDUCATION_ONLY";
+        }
         return "VALIDATION_ERROR";
       }
       if (status === 200) {
@@ -459,6 +486,11 @@
             ? "انتهت صلاحية الجلسة. يرجى تسجيل الدخول مجدداً."
             : "Your session has expired. Please sign in again.";
         case "FORBIDDEN":
+          if (ctx === "open_agent") {
+            return isAr
+              ? "هذا الوكيل خاص ولا يمكن الوصول إليه إلا من حساب صانعه."
+              : "This agent is private and can only be accessed by its creator.";
+          }
           return isAr
             ? "ليس لديك صلاحية لتنفيذ هذا الإجراء."
             : "You don't have permission to perform this action.";
@@ -469,6 +501,9 @@
         case "NOT_FOUND":
           if (ctx === "open_agent") {
             return isAr ? "هذا الوكيل غير متوفر حالياً." : "This agent is currently unavailable.";
+          }
+          if (ctx === "open_creator") {
+            return isAr ? "حساب الصانع غير متوفر حالياً." : "Creator profile was not found.";
           }
           return isAr ? "العنصر المطلوب غير متوفر." : "The requested item was not found.";
         case "VALIDATION_ERROR":
@@ -485,6 +520,18 @@
           return isAr
             ? "يرجى مراجعة البيانات المدخلة والمحاولة مرة أخرى."
             : "Please check your input and try again.";
+        case "PDF_TOO_LARGE":
+          return isAr
+            ? "حجم ملف PDF يجب ألا يتجاوز 50 ميجابايت."
+            : "PDF file size must not exceed 50MB.";
+        case "PDF_INVALID_TYPE":
+          return isAr
+            ? "يُسمح فقط برفع ملفات بصيغة PDF."
+            : "Only PDF files are allowed.";
+        case "PDF_EDUCATION_ONLY":
+          return isAr
+            ? "رفع ملف PDF متاح فقط لوكلاء تصنيف التعليم."
+            : "PDF reference upload is only supported for Educational agents.";
         case "RATE_LIMITED":
           return isAr
             ? "تم إرسال عدة طلبات خلال وقت قصير. انتظر لحظات وحاول مجدداً."
@@ -522,6 +569,9 @@
       purifyHookRegistered = true;
     }
 
+    // ==========================================
+    // 2. UI Constants (Categories, Themes, FAQ)
+    // ==========================================
     const CATEGORIES = [
       { id: "All", ar: "الكل", en: "All" },
       { id: "Education", ar: "التعليم", en: "Education" },
@@ -561,11 +611,17 @@
         a_ar: "نعم، يمكنك إنشاء وكلائك ومشاركتهم ليستفيد منهم الآخرون داخل المنصة.",
         q_en: "Can I share agents that I create?",
         a_en: "Yes. You can create your agents and share them with other people on the platform."
+      },
+      {
+        q_ar: "هل يمكنني رفع ملف PDF ليبني الوكيل التعليمي دروسه منه؟",
+        a_ar: "نعم! عند إنشاء وكيل ضمن تصنيف «التعليم»، يمكنك إرفاق ملف PDF للمنهج أو الكتاب (بحد أقصى 50 ميجابايت)، وسيستخرج مهندس الأوامر منهجه ومفاهيمه الأساسية ليلتزم الوكيل بالتدريس منه بدقة.",
+        q_en: "Can I upload a PDF for an Educational agent to teach from?",
+        a_en: "Yes! When creating an agent in the Education category, you can attach a reference PDF (up to 50MB). Our Prompt Architect extracts its syllabus and key concepts so the agent teaches strictly from your material."
       }
     ];
 
     // ==========================================
-    // Reusable Inline Error Banner (Inside Modals/Forms)
+    // 3. Shared UI Primitives
     // ==========================================
     function InlineAlert({ message }) {
       if (!message) return null;
@@ -637,8 +693,9 @@
       }, [src]);
 
       const initial = String(fallbackText || alt || "A").trim().charAt(0).toUpperCase() || "A";
+      const isSafeUrl = typeof src === "string" && /^https?:\/\//i.test(src.trim());
 
-      if (!src || failed) {
+      if (!isSafeUrl || failed) {
         return (
           <div
             aria-label={alt}
@@ -711,6 +768,29 @@
         ),
         check: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="m5 12 4 4L19 6" />,
         arrowLeft: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" d="M19 12H5m6 6-6-6 6-6" />,
+        file: (
+          <React.Fragment>
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 2v6h6M9 13h6M9 17h4" />
+          </React.Fragment>
+        ),
+        upload: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" />,
+        stop: <rect x="6" y="6" width="12" height="12" rx="2" strokeWidth="2.2" fill="currentColor" />,
+        lock: (
+          <React.Fragment>
+            <rect x="5" y="11" width="14" height="10" rx="2" strokeWidth="2" />
+            <path strokeLinecap="round" strokeWidth="2" d="M8 11V7a4 4 0 0 1 8 0v4" />
+          </React.Fragment>
+        ),
+        share: (
+          <React.Fragment>
+            <circle cx="18" cy="5" r="3" strokeWidth="2" />
+            <circle cx="6" cy="12" r="3" strokeWidth="2" />
+            <circle cx="18" cy="19" r="3" strokeWidth="2" />
+            <path strokeWidth="2" d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4" />
+          </React.Fragment>
+        ),
+        edit: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />,
       };
 
       return (
@@ -763,7 +843,7 @@
     };
 
     // ==========================================
-    // Rich Markdown & Code Rendering
+    // 4. Markdown, Code & Math Message Rendering
     // ==========================================
     const escapeHtml = (value) => String(value).replace(/[&<>"']/g, (char) => ({
       "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
@@ -905,7 +985,22 @@
       }
 
       for (const expression of mathSegments) {
-        const mathHtml = mathToHtml(expression);
+        const rawMathHtml = mathToHtml(expression);
+        const mathHtml = window.DOMPurify
+          ? window.DOMPurify.sanitize(rawMathHtml, {
+              ADD_TAGS: [
+                "math", "semantics", "mrow", "mi", "mo", "mn", "msup", "msub",
+                "msubsup", "mfrac", "msqrt", "mroot", "mtable", "mtr", "mtd",
+                "mtext", "mspace", "mstyle", "annotation"
+              ],
+              ADD_ATTR: [
+                "mathvariant", "encoding", "xmlns", "display", "columnalign",
+                "rowspacing", "columnspacing", "displaystyle", "scriptlevel",
+                "fence", "stretchy", "symmetric", "maxsize", "minsize",
+                "lspace", "rspace", "aria-hidden"
+              ],
+            })
+          : rawMathHtml;
         if (expression.display) {
           const wrapper = `<div class="math-block" dir="ltr">${mathHtml}</div>`;
           const paragraph = new RegExp(`<p(?:\\s+[^>]*)?>\\s*${expression.key}\\s*</p>`, "g");
@@ -929,7 +1024,7 @@
       if (!text) return null;
       if (!text.includes("```") && /^\s*<(?:\?xml\b|[A-Za-z][\w:-]*[\s>])/.test(text)
         && /<\/[A-Za-z][\w:-]*>/.test(text)) {
-        return <CodeSnippet code="{text.trim()}" lang="{uiLang}" language="xml"/>;
+        return <CodeSnippet code={text.trim()} lang={uiLang} language="xml" />;
       }
       const parts = text.split(/(```[\s\S]*?(?:```|$))/g).filter(Boolean);
       return (
@@ -995,7 +1090,7 @@
     };
 
     // ==========================================
-    // Skeleton Card (Used in Catalog & Boot Screen)
+    // 5. Skeleton Loaders
     // ==========================================
     function AgentCardSkeleton() {
       return (
@@ -1181,7 +1276,123 @@
     }
 
     // ==========================================
-    // Main Application Component
+    // 6. URL Routing & Share Helpers
+    // ==========================================
+    const AGENTS_PER_PAGE = 20;
+
+    function parseRouteFromLocation() {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const queryAgent = params.get("agent");
+        if (queryAgent && queryAgent.trim()) {
+          return { view: "chat", slug: queryAgent.trim(), username: "" };
+        }
+        const queryCreator = params.get("creator");
+        if (queryCreator && queryCreator.trim()) {
+          return { view: "creator", slug: "", username: queryCreator.trim().toLowerCase() };
+        }
+        if (params.get("view") === "profile") {
+          return { view: "profile", slug: "", username: "" };
+        }
+        const hash = window.location.hash || "";
+        const agentMatch = hash.match(/^#\/agent\/([^/?#]+)/);
+        if (agentMatch) {
+          return { view: "chat", slug: decodeURIComponent(agentMatch[1]), username: "" };
+        }
+        const creatorMatch = hash.match(/^#\/creator\/([^/?#]+)/);
+        if (creatorMatch) {
+          return { view: "creator", slug: "", username: decodeURIComponent(creatorMatch[1]).toLowerCase() };
+        }
+        if (hash === "#/profile") {
+          return { view: "profile", slug: "", username: "" };
+        }
+      } catch {}
+      return { view: "explore", slug: "", username: "" };
+    }
+
+    function buildShareUrlForAgent(slug) {
+      try {
+        if (window.location.protocol === "file:") {
+          return `${window.location.href.split("#")[0]}#/agent/${encodeURIComponent(slug)}`;
+        }
+        const url = new URL(window.location.href);
+        url.hash = "";
+        url.searchParams.delete("view");
+        url.searchParams.delete("creator");
+        url.searchParams.set("agent", slug);
+        return url.toString();
+      } catch {
+        return `?agent=${encodeURIComponent(slug)}`;
+      }
+    }
+
+    function buildShareUrlForCreator(username) {
+      try {
+        if (window.location.protocol === "file:") {
+          return `${window.location.href.split("#")[0]}#/creator/${encodeURIComponent(username)}`;
+        }
+        const url = new URL(window.location.href);
+        url.hash = "";
+        url.searchParams.delete("view");
+        url.searchParams.delete("agent");
+        url.searchParams.set("creator", username);
+        return url.toString();
+      } catch {
+        return `?creator=${encodeURIComponent(username)}`;
+      }
+    }
+
+    function syncUrlRoute(nextView, param = "", replace = false) {
+      try {
+        const current = parseRouteFromLocation();
+        if (
+          current.view === nextView &&
+          (nextView !== "chat" || current.slug === param) &&
+          (nextView !== "creator" || current.username === param.toLowerCase())
+        ) {
+          return;
+        }
+        if (window.location.protocol === "file:") {
+          const nextHash = nextView === "chat" && param
+            ? `#/agent/${encodeURIComponent(param)}`
+            : nextView === "creator" && param
+              ? `#/creator/${encodeURIComponent(param)}`
+              : nextView === "profile"
+                ? "#/profile"
+                : "#/";
+          if (replace) {
+            window.location.replace(nextHash);
+          } else {
+            window.location.hash = nextHash;
+          }
+          return;
+        }
+        const url = new URL(window.location.href);
+        url.hash = "";
+        if (nextView === "chat" && param) {
+          url.searchParams.set("agent", param);
+          url.searchParams.delete("view");
+          url.searchParams.delete("creator");
+        } else if (nextView === "creator" && param) {
+          url.searchParams.set("creator", param);
+          url.searchParams.delete("agent");
+          url.searchParams.delete("view");
+        } else if (nextView === "profile") {
+          url.searchParams.set("view", "profile");
+          url.searchParams.delete("agent");
+          url.searchParams.delete("creator");
+        } else {
+          url.searchParams.delete("agent");
+          url.searchParams.delete("view");
+          url.searchParams.delete("creator");
+        }
+        const method = replace ? "replaceState" : "pushState";
+        window.history[method]({ view: nextView, param }, "", url.toString());
+      } catch {}
+    }
+
+    // ==========================================
+    // 7. Main Application State & Orchestration
     // ==========================================
     function App() {
       const [lang, setLang] = useState(() => safeStorage.get("agenttube_lang", "ar") === "en" ? "en" : "ar");
@@ -1190,18 +1401,24 @@
       const [showAuthModal, setShowAuthModal] = useState(false);
       const [authMode, setAuthMode] = useState("login");
 
-      const [view, setView] = useState("explore"); // "explore" | "chat" | "profile"
+      const [view, setView] = useState("explore"); // "explore" | "chat" | "profile" | "creator"
       const [showCreateModal, setShowCreateModal] = useState(false);
       const [toast, setToast] = useState(null);
       const [showMobileHistory, setShowMobileHistory] = useState(false);
 
-      // Explore & FAQ State
+      // Explore, Pagination & Hero Stats State
       const [agents, setAgents] = useState([]);
       const [loadingAgents, setLoadingAgents] = useState(true);
+      const [loadingMoreAgents, setLoadingMoreAgents] = useState(false);
       const [agentsLoadFailed, setAgentsLoadFailed] = useState(false);
+      const [agentsPagination, setAgentsPagination] = useState({ total: 0, page: 1, pages: 1 });
+      const [heroStats, setHeroStats] = useState({ totalAgents: 0, totalViews: 0 });
       const [selectedCategory, setSelectedCategory] = useState("All");
       const [searchQuery, setSearchQuery] = useState("");
       const [openFaqIndex, setOpenFaqIndex] = useState(0);
+
+      const initialRouteRef = useRef(parseRouteFromLocation());
+      const initialRouteHandledRef = useRef(false);
 
       // Server Boot / Wake-Up State
       const MAX_WAKE_ATTEMPTS = 3;
@@ -1212,10 +1429,16 @@
       const hasBootedRef = useRef(false);
       const isFirstReadyRef = useRef(true);
 
-      // Profile State
+      // Profile & Public Creator Profile State
       const [profileAgents, setProfileAgents] = useState([]);
       const [profileLoading, setProfileLoading] = useState(false);
       const [profileError, setProfileError] = useState("");
+      const [creatorProfile, setCreatorProfile] = useState({
+        user: null,
+        agents: [],
+        loading: false,
+        error: "",
+      });
 
       // Chat & Memory State
       const [activeAgent, setActiveAgent] = useState(null);
@@ -1331,8 +1554,9 @@
         }, timeoutMs);
 
         try {
+          const isFormData = typeof FormData !== "undefined" && fetchOptions.body instanceof FormData;
           const headers = {
-            "Content-Type": "application/json",
+            ...(!isFormData ? { "Content-Type": "application/json" } : {}),
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
             ...(extraHeaders || {}),
           };
@@ -1414,14 +1638,22 @@
 
             try {
               const res = await apiFetch(
-                "/api/agents",
+                `/api/agents?page=1&limit=${AGENTS_PER_PAGE}`,
                 { signal: controller.signal, timeoutMs: REQUEST_TIMEOUT_MS },
                 "load_agents"
               );
               if (cancelled) return;
 
+              const list = Array.isArray(res.data) ? res.data : [];
+              const pagination = res.pagination || { total: list.length, page: 1, pages: 1 };
+
               hasBootedRef.current = true;
-              setAgents(Array.isArray(res.data) ? res.data : []);
+              setAgents(list);
+              setAgentsPagination(pagination);
+              setHeroStats({
+                totalAgents: res.stats?.totalAgents ?? pagination.total ?? list.length,
+                totalViews: res.stats?.totalViews ?? list.reduce((acc, a) => acc + (Number(a.viewsCount) || 0), 0),
+              });
               setAgentsLoadFailed(false);
               setLoadingAgents(false);
               setServerStatus("ready");
@@ -1475,31 +1707,65 @@
         return () => { cancelled = true; };
       }, [token, serverStatus, apiFetch, clearSession]);
 
-      // 2. Fetch Agents (on category/search change after initial boot)
-      const fetchAgents = useCallback(async () => {
-        agentsAbortRef.current?.abort();
-        const controller = new AbortController();
-        agentsAbortRef.current = controller;
+      // 2. Fetch Agents (with pagination, category & search)
+      const fetchAgents = useCallback(async (targetPage = 1, append = false) => {
+        if (append) {
+          setLoadingMoreAgents(true);
+        } else {
+          agentsAbortRef.current?.abort();
+          setLoadingAgents(true);
+        }
 
-        setLoadingAgents(true);
+        const controller = new AbortController();
+        if (!append) agentsAbortRef.current = controller;
+
         setAgentsLoadFailed(false);
         try {
           const params = new URLSearchParams();
+          params.append("page", String(targetPage));
+          params.append("limit", String(AGENTS_PER_PAGE));
           if (selectedCategory !== "All") params.append("category", selectedCategory);
           if (searchQuery.trim()) params.append("search", searchQuery.trim());
+
           const res = await apiFetch(
             `/api/agents?${params.toString()}`,
             { signal: controller.signal },
             "load_agents"
           );
           if (controller.signal.aborted) return;
-          setAgents(Array.isArray(res.data) ? res.data : []);
+
+          const list = Array.isArray(res.data) ? res.data : [];
+          const pagination = res.pagination || { total: list.length, page: targetPage, pages: 1 };
+
+          if (append) {
+            setAgents((prev) => {
+              const seen = new Set(prev.map((a) => a._id));
+              return [...prev, ...list.filter((a) => !seen.has(a._id))];
+            });
+          } else {
+            setAgents(list);
+          }
+          setAgentsPagination(pagination);
+
+          if (res.stats) {
+            setHeroStats({
+              totalAgents: res.stats.totalAgents ?? pagination.total ?? list.length,
+              totalViews: res.stats.totalViews ?? 0,
+            });
+          } else if (!append && selectedCategory === "All" && !searchQuery.trim()) {
+            setHeroStats({
+              totalAgents: pagination.total ?? list.length,
+              totalViews: list.reduce((acc, a) => acc + (Number(a.viewsCount) || 0), 0),
+            });
+          }
         } catch (err) {
           if (err?.name === "AbortError" && !(err instanceof AppError)) return;
-          setAgentsLoadFailed(true);
+          if (!append) setAgentsLoadFailed(true);
           notify(getFriendlyError(err, lang, "load_agents"), "error");
         } finally {
-          if (!controller.signal.aborted) {
+          if (append) {
+            setLoadingMoreAgents(false);
+          } else if (!controller.signal.aborted) {
             setLoadingAgents(false);
           }
         }
@@ -1511,38 +1777,61 @@
           isFirstReadyRef.current = false;
           return;
         }
-        const timer = setTimeout(fetchAgents, 250);
+        const timer = setTimeout(() => fetchAgents(1, false), 250);
         return () => clearTimeout(timer);
       }, [serverStatus, fetchAgents]);
 
-      const loadProfileAgents = async (account) => {
+      const loadProfileAgents = useCallback(async (account) => {
         setProfileLoading(true);
         setProfileError("");
         try {
-          const res = await apiFetch("/api/agents?limit=50", {}, "load_agents");
-          const list = Array.isArray(res.data) ? res.data
-            : (Array.isArray(res.data?.agents) ? res.data.agents : []);
-          setProfileAgents(list.filter((agent) => isAgentOwnedBy(agent, account)));
+          let list = [];
+          try {
+            const res = await apiFetch("/api/my-agents", {}, "load_agents");
+            list = Array.isArray(res.data) ? res.data : [];
+          } catch (err) {
+            if (err instanceof AppError && err.status === 404) {
+              const fallback = await apiFetch("/api/agents?limit=50", {}, "load_agents");
+              const raw = Array.isArray(fallback.data) ? fallback.data
+                : (Array.isArray(fallback.data?.agents) ? fallback.data.agents : []);
+              list = raw.filter((agent) => isAgentOwnedBy(agent, account));
+            } else {
+              throw err;
+            }
+          }
+          setProfileAgents(list);
         } catch (err) {
           setProfileError(getFriendlyError(err, lang, "load_agents"));
         } finally {
           setProfileLoading(false);
         }
-      };
+      }, [apiFetch, lang]);
 
-      const openProfile = () => {
+      const navigateToExplore = useCallback((options = {}) => {
+        abortActiveStream();
+        setShowMobileHistory(false);
+        setView("explore");
+        if (!options.skipPush) {
+          syncUrlRoute("explore", "", Boolean(options.replaceUrl));
+        }
+      }, [abortActiveStream]);
+
+      const openProfile = useCallback((options = {}) => {
         if (!token || !user) {
           setAuthMode("login");
           setShowAuthModal(true);
           return;
         }
         setView("profile");
+        if (!options.skipPush) {
+          syncUrlRoute("profile", "", Boolean(options.replaceUrl));
+        }
         loadProfileAgents(user);
-      };
+      }, [token, user, loadProfileAgents]);
 
       const scrollToSection = (ref) => {
         if (view !== "explore") {
-          setView("explore");
+          navigateToExplore();
           setTimeout(() => ref.current?.scrollIntoView({ behavior: "smooth" }), 100);
         } else {
           ref.current?.scrollIntoView({ behavior: "smooth" });
@@ -1603,7 +1892,7 @@
       };
 
       // Open Agent Chat Workspace
-      const openAgentWorkspace = async (slug) => {
+      const openAgentWorkspace = useCallback(async (slug, options = {}) => {
         abortActiveStream();
         try {
           const res = await apiFetch(`/api/agents/${encodeURIComponent(slug)}`, {}, "open_agent");
@@ -1615,6 +1904,9 @@
           setActiveConversationId(null);
           setMessages([]);
           setView("chat");
+          if (!options.skipPush) {
+            syncUrlRoute("chat", agentData.slug, Boolean(options.replaceUrl));
+          }
 
           if (token) {
             const [convResult] = await Promise.allSettled([
@@ -1632,8 +1924,141 @@
           }
         } catch (err) {
           notify(getFriendlyError(err, lang, "open_agent"), "error");
+          if (options.fromInitialRoute) {
+            setView("explore");
+            syncUrlRoute("explore", "", true);
+          }
         }
-      };
+      }, [abortActiveStream, apiFetch, token, lang, notify]);
+
+      const handleShareAgent = useCallback(async (agentObj) => {
+        if (!agentObj?.slug) return;
+        const shareUrl = buildShareUrlForAgent(agentObj.slug);
+        try {
+          await navigator.clipboard.writeText(shareUrl);
+          notify(lang === "ar" ? "تم نسخ رابط الوكيل للمشاركة" : "Agent link copied to clipboard", "success");
+        } catch {
+          notify(shareUrl, "info");
+        }
+      }, [lang, notify]);
+
+      const handleShareCreator = useCallback(async (username) => {
+        if (!username) return;
+        const shareUrl = buildShareUrlForCreator(username);
+        try {
+          await navigator.clipboard.writeText(shareUrl);
+          notify(lang === "ar" ? "تم نسخ رابط الملف الشخصي" : "Profile link copied to clipboard", "success");
+        } catch {
+          notify(shareUrl, "info");
+        }
+      }, [lang, notify]);
+
+      const openCreatorProfile = useCallback(async (username, options = {}) => {
+        const cleanUsername = String(username || "").trim().toLowerCase();
+        if (!cleanUsername) return;
+        abortActiveStream();
+        setShowMobileHistory(false);
+        setView("creator");
+        if (!options.skipPush) {
+          syncUrlRoute("creator", cleanUsername, Boolean(options.replaceUrl));
+        }
+        setCreatorProfile({
+          user: { username: cleanUsername, displayName: cleanUsername },
+          agents: [],
+          loading: true,
+          error: "",
+        });
+        try {
+          const res = await apiFetch(`/api/users/${encodeURIComponent(cleanUsername)}`, {}, "open_creator");
+          const payload = res.data;
+          if (!payload?.user) throw new AppError("NOT_FOUND", 404, "open_creator");
+          setCreatorProfile({
+            user: payload.user,
+            agents: Array.isArray(payload.agents) ? payload.agents : [],
+            loading: false,
+            error: "",
+          });
+        } catch (err) {
+          const msg = getFriendlyError(err, lang, "open_creator");
+          setCreatorProfile((prev) => ({ ...prev, loading: false, error: msg }));
+          if (options.fromInitialRoute) {
+            notify(msg, "error");
+          }
+        }
+      }, [abortActiveStream, apiFetch, lang, notify]);
+
+      // Apply initial URL route once server is ready
+      useEffect(() => {
+        if (serverStatus !== "ready" || initialRouteHandledRef.current) return;
+        const route = initialRouteRef.current;
+
+        if (route.view === "chat" && route.slug) {
+          initialRouteHandledRef.current = true;
+          openAgentWorkspace(route.slug, { skipPush: true, fromInitialRoute: true });
+          return;
+        }
+
+        if (route.view === "creator" && route.username) {
+          initialRouteHandledRef.current = true;
+          openCreatorProfile(route.username, { skipPush: true, fromInitialRoute: true });
+          return;
+        }
+
+        if (route.view === "profile") {
+          if (!token) {
+            initialRouteHandledRef.current = true;
+            setAuthMode("login");
+            setShowAuthModal(true);
+            syncUrlRoute("explore", "", true);
+            return;
+          }
+          if (user) {
+            initialRouteHandledRef.current = true;
+            setView("profile");
+            loadProfileAgents(user);
+          }
+          return;
+        }
+
+        initialRouteHandledRef.current = true;
+      }, [serverStatus, token, user, openAgentWorkspace, openCreatorProfile, loadProfileAgents]);
+
+      // Sync with Browser Back / Forward buttons
+      useEffect(() => {
+        const handleRouteChange = () => {
+          const route = parseRouteFromLocation();
+          if (route.view === "chat" && route.slug) {
+            if (activeAgent?.slug === route.slug) {
+              setView("chat");
+            } else {
+              openAgentWorkspace(route.slug, { skipPush: true, fromInitialRoute: true });
+            }
+          } else if (route.view === "creator" && route.username) {
+            if (creatorProfile.user?.username?.toLowerCase() === route.username && !creatorProfile.error) {
+              setView("creator");
+            } else {
+              openCreatorProfile(route.username, { skipPush: true, fromInitialRoute: true });
+            }
+          } else if (route.view === "profile") {
+            if (token && user) {
+              openProfile({ skipPush: true });
+            } else {
+              navigateToExplore({ skipPush: true, replaceUrl: true });
+              setAuthMode("login");
+              setShowAuthModal(true);
+            }
+          } else {
+            navigateToExplore({ skipPush: true });
+          }
+        };
+
+        window.addEventListener("popstate", handleRouteChange);
+        window.addEventListener("hashchange", handleRouteChange);
+        return () => {
+          window.removeEventListener("popstate", handleRouteChange);
+          window.removeEventListener("hashchange", handleRouteChange);
+        };
+      }, [activeAgent, creatorProfile.user, creatorProfile.error, token, user, openAgentWorkspace, openCreatorProfile, openProfile, navigateToExplore]);
 
       // Load specific conversation
       const selectConversation = async (convId) => {
@@ -1815,7 +2240,17 @@
             throw new AppError("CHAT_INTERRUPTED", 500, "chat");
           }
         } catch (err) {
-          if (userCancelledStreamRef.current) return;
+          if (userCancelledStreamRef.current) {
+            if (!receivedAnyChunk) {
+              setMessages((prev) =>
+                prev.filter((m) => m._id !== tempUserId && m._id !== tempModelId)
+              );
+              if (!textOverride) {
+                setInputMessage(textToSend);
+              }
+            }
+            return;
+          }
           notify(getFriendlyError(err, lang, "chat"), "error");
           if (!receivedAnyChunk) {
             setMessages((prev) =>
@@ -1837,13 +2272,35 @@
         }
       };
 
+      const handleUpdateBio = useCallback(async (newBio) => {
+        const res = await apiFetch("/api/auth/me", {
+          method: "PATCH",
+          body: JSON.stringify({ bio: newBio }),
+        }, "profile_bio");
+        if (res.data) {
+          setUser((prev) => ({ ...(prev || {}), ...res.data }));
+        } else {
+          setUser((prev) => (prev ? { ...prev, bio: newBio } : prev));
+        }
+        notify(lang === "ar" ? "تم تحديث النبذة التعريفية بنجاح" : "Bio updated successfully", "success");
+      }, [apiFetch, lang, notify]);
+
       const handleLogout = () => {
         abortActiveStream();
+        if (token) {
+          fetch(`${API_BASE}/api/auth/logout`, {
+            method: "POST",
+            headers: { Authorization: `Bearer ${token}` },
+          }).catch(() => {});
+        }
         clearSession();
         setShowMobileHistory(false);
         setProfileAgents([]);
         setProfileError("");
-        if (view === "profile") setView("explore");
+        if (view === "profile" || (view === "chat" && activeAgent?.isPublic === false)) {
+          setView("explore");
+          syncUrlRoute("explore", "", true);
+        }
         notify(lang === "ar" ? "تم تسجيل الخروج بنجاح" : "Signed out successfully");
       };
 
@@ -1862,7 +2319,8 @@
       }
 
       const isChatView = view === "chat";
-      const totalViewsAll = agents.reduce((acc, a) => acc + (Number(a.viewsCount) || 0), 0);
+      const totalViewsAll = heroStats.totalViews;
+      const totalAgentsCount = heroStats.totalAgents || agents.length || 12;
 
       return (
         <div
@@ -1884,508 +2342,58 @@
             </div>
           )}
 
-          {/* ========================================== */}
-          {/* TOP NAVBAR                                 */}
-          {/* ========================================== */}
-          <header className="sticky top-0 z-30 flex-shrink-0 bg-cream border-b-2 border-line">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
-              <div className="flex items-center gap-6 lg:gap-8">
-                <button
-                  type="button"
-                  onClick={() => setView("explore")}
-                  className="text-start focus:outline-none"
-                >
-                  <BrandLogo />
-                </button>
+          <TopNavbar
+            lang={lang}
+            setLang={setLang}
+            view={view}
+            user={user}
+            token={token}
+            onNavigateExplore={() => navigateToExplore()}
+            onScrollToCatalog={() => scrollToSection(catalogRef)}
+            onScrollToHowItWorks={() => scrollToSection(howItWorksRef)}
+            onScrollToFaq={() => scrollToSection(faqRef)}
+            onOpenProfile={() => openProfile()}
+            onOpenCreate={() => setShowCreateModal(true)}
+            onOpenLogin={() => {
+              setAuthMode("login");
+              setShowAuthModal(true);
+            }}
+            onLogout={handleLogout}
+          />
 
-                <nav className="hidden md:flex items-center gap-6 text-sm font-bold" aria-label={lang === "ar" ? "التنقل الرئيسي" : "Main navigation"}>
-                  <button
-                    type="button"
-                    onClick={() => scrollToSection(catalogRef)}
-                    className={`transition-colors ${view === "explore" ? "text-brandBlue" : "text-ink hover:text-brandBlue"}`}
-                  >
-                    {lang === "ar" ? "استكشف الوكلاء" : "Explore Agents"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => scrollToSection(howItWorksRef)}
-                    className="text-ink hover:text-brandBlue transition-colors"
-                  >
-                    {lang === "ar" ? "كيف يعمل؟" : "How it Works"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => scrollToSection(faqRef)}
-                    className="text-ink hover:text-brandBlue transition-colors"
-                  >
-                    {lang === "ar" ? "الأسئلة الشائعة" : "FAQ"}
-                  </button>
-                  {user && (
-                    <button
-                      type="button"
-                      onClick={openProfile}
-                      className={`transition-colors ${view === "profile" ? "text-brandBlue underline decoration-2 underline-offset-4" : "text-ink hover:text-brandBlue"}`}
-                    >
-                      {lang === "ar" ? "حسابي" : "My Profile"}
-                    </button>
-                  )}
-                </nav>
-              </div>
-
-              <div className="flex items-center gap-2 sm:gap-3">
-                <button
-                  type="button"
-                  onClick={() => setLang(lang === "ar" ? "en" : "ar")}
-                  className="nb-btn px-2.5 sm:px-3 py-1.5 bg-paper text-xs font-extrabold text-ink flex items-center gap-1.5"
-                  title={lang === "ar" ? "Switch to English" : "التحويل إلى العربية"}
-                >
-                  <span>{lang === "ar" ? "EN" : "عربي"}</span>
-                  <Icon name="globe" className="w-3.5 h-3.5" />
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (!token) {
-                      setAuthMode("login");
-                      setShowAuthModal(true);
-                    } else {
-                      setShowCreateModal(true);
-                    }
-                  }}
-                  className="hidden sm:flex items-center gap-1.5 px-3.5 py-1.5 bg-brandYellow text-ink text-xs sm:text-sm font-extrabold nb-btn"
-                >
-                  <Icon name="plus" className="w-4 h-4" />
-                  <span>{lang === "ar" ? "إنشاء وكيل" : "Create Agent"}</span>
-                </button>
-
-                {user ? (
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={openProfile}
-                      className="nb-btn flex items-center gap-2 bg-paper px-2.5 py-1 text-xs font-extrabold text-ink"
-                    >
-                      <SafeAvatar
-                        src={user.avatarUrl}
-                        alt={user.displayName || user.username}
-                        fallbackText={user.displayName || user.username}
-                        className="w-6 h-6 border border-line bg-cream text-[11px] object-cover"
-                      />
-                      <span className="hidden sm:inline max-w-[100px] truncate">{user.displayName || user.username}</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleLogout}
-                      title={lang === "ar" ? "تسجيل الخروج" : "Sign out"}
-                      aria-label={lang === "ar" ? "تسجيل الخروج" : "Sign out"}
-                      className="nb-btn p-1.5 bg-paper hover:bg-rose-100 text-ink"
-                    >
-                      <Icon name="logout" className="w-4 h-4" />
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setAuthMode("login");
-                      setShowAuthModal(true);
-                    }}
-                    className="nb-btn px-3.5 sm:px-4 py-1.5 bg-paper text-ink text-xs sm:text-sm font-extrabold"
-                  >
-                    {lang === "ar" ? "تسجيل الدخول" : "Sign In"}
-                  </button>
-                )}
-              </div>
-            </div>
-          </header>
-
-          {/* ========================================== */}
-          {/* VIEW 1: LANDING & AGENTS CATALOG           */}
-          {/* ========================================== */}
           {view === "explore" && (
-            <main className="flex-1">
-              <section className="max-w-5xl mx-auto px-4 sm:px-6 pt-12 pb-16 sm:pt-16 sm:pb-20 text-center">
-                <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-brandYellow border-2 border-line shadow-sm text-xs sm:text-sm font-extrabold text-ink mb-6">
-                  <span className="w-2 h-2 bg-darkPanel inline-block" />
-                  <span>{lang === "ar" ? "إيه هو AgentTube؟" : "What is AgentTube?"}</span>
-                </div>
-
-                <h1 className="text-3xl sm:text-5xl lg:text-[56px] font-extrabold text-ink tracking-tight leading-[1.18] mb-6">
-                  <span className="yellow-underline">
-                    {lang === "ar"
-                      ? "نبني الوكلاء اللي كنا نتمنى نلاقيها"
-                      : "Building the AI Agents we wished existed"}
-                  </span>
-                </h1>
-
-                <p className="text-base sm:text-xl font-medium text-neutral-700 max-w-2xl mx-auto leading-relaxed mb-8">
-                  {lang === "ar"
-                    ? "منصة وكلاء ذكاء اصطناعي للمستخدم العربي: برومبتات هندسية دقيقة، ذاكرة تراكمية تحفظ تقدمك، وإمكانية إنشاء وكلائك ومشاركتهم بسهولة."
-                    : "An AI Agent Hub for Arabic & English creators, with structured XML prompts, cross-session memory, and easy agent creation and sharing."}
-                </p>
-
-                <div className="flex flex-wrap items-center justify-center gap-3.5 mb-12">
-                  <button
-                    type="button"
-                    onClick={() => (token ? setShowCreateModal(true) : (setAuthMode("register"), setShowAuthModal(true)))}
-                    className="nb-btn px-6 py-3 bg-brandBlue hover:bg-brandBlueHover text-white text-sm sm:text-base font-extrabold flex items-center gap-2"
-                  >
-                    <Icon name="sparkles" className="w-5 h-5" />
-                    <span>{lang === "ar" ? "أنشئ وكيلك الآن مجاناً" : "Build Your Agent Now"}</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => scrollToSection(catalogRef)}
-                    className="nb-btn px-6 py-3 bg-paper hover:bg-brandYellow text-ink text-sm sm:text-base font-extrabold flex items-center gap-2"
-                  >
-                    <span>{lang === "ar" ? "تصفح الوكلاء الجاهزين" : "Browse Agents"}</span>
-                    <Icon name="arrowLeft" className="w-4 h-4" />
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-3xl mx-auto">
-                  <div className="nb-box py-6 px-4 text-center">
-                    <div className="text-2xl sm:text-3xl font-extrabold text-ink" dir="ltr">
-                      +{agents.length || 12}
-                    </div>
-                    <p className="text-xs sm:text-sm font-bold text-neutral-600 mt-1">
-                      {lang === "ar" ? "وكيل ذكي متخصص" : "Specialized AI Agents"}
-                    </p>
-                  </div>
-                  <div className="nb-box py-6 px-4 text-center">
-                    <div className="text-2xl sm:text-3xl font-extrabold text-ink" dir="ltr">
-                      +{totalViewsAll.toLocaleString("en-US")}
-                    </div>
-                    <p className="text-xs sm:text-sm font-bold text-neutral-600 mt-1">
-                      {lang === "ar" ? "جلسة تفاعل وتعلّم" : "Learning & Chat Sessions"}
-                    </p>
-                  </div>
-                  <div className="nb-box py-6 px-4 text-center">
-                    <div className="text-2xl sm:text-3xl font-extrabold text-ink" dir="ltr">
-                      100%
-                    </div>
-                    <p className="text-xs sm:text-sm font-bold text-neutral-600 mt-1">
-                      {lang === "ar" ? "يدعم العربية بذاكرة مستمرة" : "Arabic & Persistent Memory"}
-                    </p>
-                  </div>
-                </div>
-              </section>
-
-              <section ref={howItWorksRef} className="max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-16 border-t-2 border-line">
-                <div className="mb-10">
-                  <div className="inline-flex items-center gap-2 px-3 py-1 bg-brandYellow border-2 border-line shadow-sm text-xs font-extrabold text-ink mb-4">
-                    <span className="w-2 h-2 bg-darkPanel inline-block" />
-                    <span>{lang === "ar" ? "المنصة بتعمل إيه؟" : "What does it do?"}</span>
-                  </div>
-                  <h2 className="text-2xl sm:text-4xl font-extrabold text-ink leading-tight max-w-2xl">
-                    <span className="yellow-underline">
-                      {lang === "ar"
-                        ? "نبني وكلاء أذكياء يشتغلوا فعلاً ويتذكروا تقدمك"
-                        : "Build smart agents that actually work & remember"}
-                    </span>
-                  </h2>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div className="nb-box p-6 flex flex-col justify-between">
-                    <div>
-                      <div className="flex items-center gap-3 mb-5">
-                        <span className="w-8 h-8 bg-brandYellow border-2 border-line shadow-sm flex items-center justify-center font-extrabold text-sm">
-                          01
-                        </span>
-                        <h3 className="text-xl font-extrabold text-ink">
-                          {lang === "ar" ? "هندسة الأوامر" : "Prompt Architect"}
-                        </h3>
-                      </div>
-                      <div className="py-4 bg-cream/60 border border-line mb-5">
-                        <FeatureIllustration type="architect" />
-                      </div>
-                    </div>
-                    <p className="text-sm font-semibold text-neutral-700 leading-relaxed border-t-2 border-line pt-4">
-                      {lang === "ar"
-                        ? "اكتب وصفاً بسيطاً لفكرتك، ومهندس الأوامر الذكي يحوله فوراً إلى هيكل XML احترافي يمنع الهلوسة ويضبط أسلوب الرد."
-                        : "Describe your idea in plain words, and our AI Architect converts it into a strict Hybrid XML instruction set."}
-                    </p>
-                  </div>
-
-                  <div className="nb-box p-6 flex flex-col justify-between">
-                    <div>
-                      <div className="flex items-center gap-3 mb-5">
-                        <span className="w-8 h-8 bg-brandYellow border-2 border-line shadow-sm flex items-center justify-center font-extrabold text-sm">
-                          02
-                        </span>
-                        <h3 className="text-xl font-extrabold text-ink">
-                          {lang === "ar" ? "ذاكرة تراكمية" : "Persistent Memory"}
-                        </h3>
-                      </div>
-                      <div className="py-4 bg-cream/60 border border-line mb-5">
-                        <FeatureIllustration type="memory" />
-                      </div>
-                    </div>
-                    <p className="text-sm font-semibold text-neutral-700 leading-relaxed border-t-2 border-line pt-4">
-                      {lang === "ar"
-                        ? "كل وكيل يحفظ مستواك والدروس اللي أنجزتها تلقائياً؛ حتى لو فتحت محادثة جديدة هيكمل معاك من آخر نقطة توقفت عندها."
-                        : "Every agent automatically tracks your progress and milestones across separate chat sessions."}
-                    </p>
-                  </div>
-
-                  <div className="nb-box p-6 flex flex-col justify-between">
-                    <div>
-                      <div className="flex items-center gap-3 mb-5">
-                        <span className="w-8 h-8 bg-brandYellow border-2 border-line shadow-sm flex items-center justify-center font-extrabold text-sm">
-                          03
-                        </span>
-                        <h3 className="text-xl font-extrabold text-ink">
-                          {lang === "ar" ? "إنشاء ومشاركة الوكلاء" : "Create & Share Agents"}
-                        </h3>
-                      </div>
-                      <div className="py-4 bg-cream/60 border border-line mb-5">
-                        <FeatureIllustration type="broadcast" />
-                      </div>
-                    </div>
-                    <p className="text-sm font-semibold text-neutral-700 leading-relaxed border-t-2 border-line pt-4">
-                      {lang === "ar"
-                        ? "أنشئ وكلاء ذكاء اصطناعي مخصصين لاحتياجاتك، وانشرهم ليستفيد منهم مجتمع المطورين والمتعلمين."
-                        : "Build AI agents tailored to your needs and share them with the community of developers and learners."}
-                    </p>
-                  </div>
-                </div>
-              </section>
-
-              <section ref={catalogRef} className="bg-catalogGray border-y-2 border-line py-12 sm:py-16">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6">
-                  <div className="nb-box p-4 sm:p-6 mb-8">
-                    <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
-                      <div className="flex items-center gap-3">
-                        <span className="px-3 py-1 bg-brandYellow border-2 border-line font-extrabold text-xs sm:text-sm">
-                          {lang === "ar" ? "مكتبة الوكلاء" : "AGENTS HUB"}
-                        </span>
-                        <h2 className="text-lg sm:text-2xl font-extrabold text-ink">
-                          {lang === "ar" ? "اختر وكيلك وابدأ المحادثة فوراً" : "Pick a Specialist & Start Chatting"}
-                        </h2>
-                      </div>
-
-                      <div className="relative w-full lg:w-80">
-                        <Icon name="search" className="catalog-search-icon w-4 h-4 text-ink absolute top-1/2 -translate-y-1/2" />
-                        <input
-                          type="text"
-                          value={searchQuery}
-                          onChange={(e) => setSearchQuery(e.target.value)}
-                          placeholder={lang === "ar" ? "ابحث عن وكيل بالاسم..." : "Search agents by name..."}
-                          dir="auto"
-                          className="nb-input catalog-search-field w-full py-2 text-sm font-bold placeholder-neutral-500"
-                        />
-                        {searchQuery && (
-                          <button
-                            type="button"
-                            onClick={() => setSearchQuery("")}
-                            aria-label={lang === "ar" ? "مسح البحث" : "Clear search"}
-                            className="catalog-search-clear absolute top-1/2 -translate-y-1/2 text-ink hover:text-rose-600 p-1"
-                          >
-                            <Icon name="close" className="w-3.5 h-3.5" />
-                          </button>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2 overflow-x-auto pt-4 mt-4 border-t-2 border-line no-scrollbar">
-                      {CATEGORIES.map((cat) => {
-                        const active = selectedCategory === cat.id;
-                        return (
-                          <button
-                            key={cat.id}
-                            type="button"
-                            onClick={() => setSelectedCategory(cat.id)}
-                            className={`px-3.5 py-1.5 text-xs sm:text-sm font-extrabold whitespace-nowrap border-2 border-line transition-all ${
-                              active
-                                ? "bg-brandYellow text-ink shadow-sm"
-                                : "bg-paper text-ink hover:bg-cream"
-                            }`}
-                          >
-                            {lang === "ar" ? cat.ar : cat.en}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {loadingAgents ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {[1, 2, 3, 4, 5, 6].map((n) => (
-                        <AgentCardSkeleton key={n} />
-                      ))}
-                    </div>
-                  ) : agentsLoadFailed && agents.length === 0 ? (
-                    <div className="nb-box p-12 text-center">
-                      <h3 className="text-xl font-extrabold text-ink mb-2">
-                        {lang === "ar" ? "تعذر تحميل قائمة الوكلاء حالياً" : "Couldn't load agents right now"}
-                      </h3>
-                      <p className="text-sm font-semibold text-neutral-600 mb-6">
-                        {lang === "ar" ? "يرجى المحاولة مرة أخرى بعد لحظات." : "Please try again in a moment."}
-                      </p>
-                      <button
-                        type="button"
-                        onClick={fetchAgents}
-                        className="nb-btn px-5 py-2.5 bg-brandYellow text-ink font-extrabold text-sm inline-flex items-center gap-2"
-                      >
-                        <Icon name="refresh" className="w-4 h-4" />
-                        <span>{lang === "ar" ? "إعادة المحاولة" : "Try Again"}</span>
-                      </button>
-                    </div>
-                  ) : agents.length === 0 ? (
-                    <div className="nb-box p-12 text-center">
-                      <h3 className="text-xl font-extrabold text-ink mb-2">
-                        {lang === "ar" ? "لا يوجد وكلاء مطابقون لبحثك" : "No agents found"}
-                      </h3>
-                      <p className="text-sm font-semibold text-neutral-600 mb-6">
-                        {lang === "ar" ? "كن أول من يبني وكيلاً في هذا التصنيف!" : "Be the first to build an agent in this category!"}
-                      </p>
-                      <button
-                        type="button"
-                        onClick={() => (token ? setShowCreateModal(true) : setShowAuthModal(true))}
-                        className="nb-btn px-5 py-2.5 bg-brandBlue text-white font-extrabold text-sm inline-flex items-center gap-2"
-                      >
-                        <Icon name="plus" className="w-4 h-4" />
-                        <span>{lang === "ar" ? "إنشاء وكيل جديد" : "Create New Agent"}</span>
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {agents.map((agent) => {
-                        const theme = CARD_THEMES[agent.category] || CARD_THEMES.General;
-                        return (
-                          <div
-                            key={agent._id}
-                            role="button"
-                            tabIndex={0}
-                            onClick={() => openAgentWorkspace(agent.slug)}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter" || e.key === " ") {
-                                e.preventDefault();
-                                openAgentWorkspace(agent.slug);
-                              }
-                            }}
-                            className="nb-card cursor-pointer flex flex-col justify-between overflow-hidden"
-                          >
-                            <div
-                              style={{ backgroundColor: theme.bg, color: theme.text }}
-                              className="agent-card-banner p-5 border-b border-line relative flex items-center justify-between gap-4 min-h-[132px]"
-                            >
-                              <div className="min-w-0 flex-1 z-10">
-                                <span
-                                  style={{ backgroundColor: theme.badgeBg, color: theme.badgeText }}
-                                  className="inline-block px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider border border-line mb-2"
-                                >
-                                  {agent.category || "GENERAL"}
-                                </span>
-                                <h4 className="font-extrabold text-lg sm:text-xl leading-snug line-clamp-2" dir="auto">
-                                  {agent.name}
-                                </h4>
-                              </div>
-
-                              <div className="relative flex-shrink-0 z-10">
-                                <SafeAvatar
-                                  src={agent.avatarUrl}
-                                  alt={agent.name}
-                                  fallbackText={agent.name}
-                                  className="w-16 h-16 bg-paper border-2 border-line shadow-sm object-cover text-lg"
-                                />
-                              </div>
-                            </div>
-
-                            <div className="p-5 flex-1 flex flex-col justify-between bg-paper">
-                              <div>
-                                <div className="flex items-center justify-between text-xs font-bold text-neutral-500 mb-1.5">
-                                  <span>@{agent.creator?.username || "creator"}</span>
-                                  <span className="inline-flex items-center gap-1 text-ink">
-                                    <Icon name="eye" className="w-3.5 h-3.5" />
-                                    {agent.viewsCount || 0}
-                                  </span>
-                                </div>
-
-                                <p className="text-sm font-semibold text-neutral-700 line-clamp-2 leading-relaxed mb-4" dir="auto">
-                                  {agent.description}
-                                </p>
-                              </div>
-
-                              <div className="pt-3 border-t-2 border-line flex items-center justify-between">
-                                <span className="px-2.5 py-1 bg-darkPanel text-brandYellow text-xs font-extrabold">
-                                  {lang === "ar" ? "ذاكرة ذكية مفعّلة" : "Smart Memory"}
-                                </span>
-                                <span className="font-extrabold text-sm text-brandBlue inline-flex items-center gap-1">
-                                  <span>{lang === "ar" ? "ابدأ الدردشة" : "Start Chat"}</span>
-                                  <Icon name="arrowLeft" className="w-4 h-4" />
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              </section>
-
-              <section ref={faqRef} className="max-w-4xl mx-auto px-4 sm:px-6 py-14 sm:py-20">
-                <div className="text-center mb-10">
-                  <div className="inline-flex items-center gap-2 px-3 py-1 bg-brandYellow border-2 border-line shadow-sm text-xs font-extrabold text-ink mb-4">
-                    <span className="w-2 h-2 bg-darkPanel inline-block" />
-                    <span>{lang === "ar" ? "الأسئلة الشائعة" : "FAQ"}</span>
-                  </div>
-                  <h2 className="text-2xl sm:text-4xl font-extrabold text-ink">
-                    {lang === "ar" ? "إجابات واضحة على أهم أسئلتك" : "Clear Answers to Common Questions"}
-                  </h2>
-                </div>
-
-                <div className="space-y-4">
-                  {FAQ_ITEMS.map((item, idx) => {
-                    const isOpen = openFaqIndex === idx;
-                    return (
-                      <div key={idx} className="nb-box overflow-hidden">
-                        <button
-                          type="button"
-                          aria-expanded={isOpen}
-                          onClick={() => setOpenFaqIndex(isOpen ? -1 : idx)}
-                          className="w-full px-5 py-4 flex items-center justify-between gap-4 text-start bg-paper hover:bg-cream/50 transition-colors"
-                        >
-                          <span className="text-base sm:text-lg font-extrabold text-ink">
-                            {lang === "ar" ? item.q_ar : item.q_en}
-                          </span>
-                          <span className="w-8 h-8 flex-shrink-0 bg-brandYellow border-2 border-line flex items-center justify-center font-extrabold text-lg text-ink">
-                            {isOpen ? "×" : "+"}
-                          </span>
-                        </button>
-                        {isOpen && (
-                          <div className="px-5 py-4 border-t-2 border-line bg-paper text-sm sm:text-base font-semibold text-neutral-700 leading-relaxed">
-                            {lang === "ar" ? item.a_ar : item.a_en}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </section>
-
-              <footer className="bg-darkPanel text-cream border-t-2 border-line py-8 px-4 sm:px-6">
-                <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-                  <div className="flex items-center gap-2.5">
-                    <span className="px-2 py-0.5 bg-brandYellow text-ink font-extrabold text-sm">AgentTube</span>
-                    <span className="text-xs sm:text-sm font-bold text-neutral-300">
-                      {lang === "ar" ? "استوديو ومنصة وكلاء الذكاء الاصطناعي بالعربي" : "Arabic & English AI Agent Studio"}
-                    </span>
-                  </div>
-                  <p className="text-xs font-bold text-neutral-400">
-                    © {new Date().getFullYear()} AgentTube Studio
-                  </p>
-                </div>
-              </footer>
-            </main>
+            <ExplorePage
+              lang={lang}
+              token={token}
+              agents={agents}
+              loadingAgents={loadingAgents}
+              loadingMoreAgents={loadingMoreAgents}
+              agentsLoadFailed={agentsLoadFailed}
+              agentsPagination={agentsPagination}
+              totalAgentsCount={totalAgentsCount}
+              totalViewsAll={totalViewsAll}
+              selectedCategory={selectedCategory}
+              setSelectedCategory={setSelectedCategory}
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+              openFaqIndex={openFaqIndex}
+              setOpenFaqIndex={setOpenFaqIndex}
+              catalogRef={catalogRef}
+              howItWorksRef={howItWorksRef}
+              faqRef={faqRef}
+              onOpenCreate={() => setShowCreateModal(true)}
+              onOpenRegister={() => {
+                setAuthMode("register");
+                setShowAuthModal(true);
+              }}
+              onOpenLogin={() => setShowAuthModal(true)}
+              onScrollToCatalog={() => scrollToSection(catalogRef)}
+              onOpenAgent={openAgentWorkspace}
+              onOpenCreator={openCreatorProfile}
+              onFetchAgents={fetchAgents}
+            />
           )}
 
-          {/* ========================================== */}
-          {/* VIEW 2: MY PROFILE                         */}
-          {/* ========================================== */}
           {view === "profile" && user && (
             <ProfilePage
               user={user}
@@ -2393,456 +2401,86 @@
               agents={profileAgents}
               loading={profileLoading}
               error={profileError}
-              onExplore={() => setView("explore")}
+              isOwnProfile={true}
+              onExplore={() => navigateToExplore()}
               onCreate={() => setShowCreateModal(true)}
               onOpenAgent={openAgentWorkspace}
               onRefresh={() => loadProfileAgents(user)}
+              onUpdateBio={handleUpdateBio}
+              onShareCreator={handleShareCreator}
             />
           )}
 
-          {/* ========================================== */}
-          {/* VIEW 3: AGENT CHAT WORKSPACE               */}
-          {/* ========================================== */}
+          {view === "creator" && creatorProfile.user && (
+            <ProfilePage
+              user={creatorProfile.user}
+              lang={lang}
+              agents={creatorProfile.agents}
+              loading={creatorProfile.loading}
+              error={creatorProfile.error}
+              isOwnProfile={false}
+              onExplore={() => navigateToExplore()}
+              onCreate={() => (token ? setShowCreateModal(true) : (setAuthMode("login"), setShowAuthModal(true)))}
+              onOpenAgent={openAgentWorkspace}
+              onRefresh={() => openCreatorProfile(creatorProfile.user.username, { skipPush: true })}
+              onShareCreator={handleShareCreator}
+            />
+          )}
+
           {view === "chat" && activeAgent && (
-            <div className="flex-1 flex min-h-0 overflow-hidden bg-cream">
-              {showMobileHistory && (
-                <button
-                  type="button"
-                  aria-label={lang === "ar" ? "إغلاق سجل المحادثات" : "Close chat history"}
-                  onClick={() => setShowMobileHistory(false)}
-                  className="md:hidden fixed inset-0 z-40 bg-black/60"
-                />
-              )}
-
-              <aside
-                id="conversation-history"
-                aria-label={lang === "ar" ? "سجل المحادثات" : "Chat history"}
-                className={`bg-paper ${
-                  showMobileHistory
-                    ? `fixed inset-y-0 ${lang === "ar" ? "right-0" : "left-0"} z-50 flex w-[min(86vw,320px)] border-s-2 border-line shadow-xl`
-                    : "hidden"
-                } md:static md:z-auto md:flex md:w-[310px] md:h-full md:flex-shrink-0 flex-col border-e-2 border-line min-h-0 overflow-hidden`}
-              >
-                <div className="md:hidden flex-shrink-0 flex items-center justify-between px-4 py-3.5 bg-brandYellow border-b-2 border-line">
-                  <span className="font-extrabold text-sm text-ink">{lang === "ar" ? "سجل المحادثات والذاكرة" : "History & Memory"}</span>
-                  <button
-                    type="button"
-                    onClick={() => setShowMobileHistory(false)}
-                    aria-label={lang === "ar" ? "إغلاق" : "Close"}
-                    className="p-1 bg-paper border border-line text-ink"
-                  >
-                    <Icon name="close" className="w-4 h-4" />
-                  </button>
-                </div>
-
-                <div className="flex-shrink-0 p-4 border-b-2 border-line bg-cream/60">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      abortActiveStream();
-                      setView("explore");
-                      setShowMobileHistory(false);
-                      fetchAgents();
-                    }}
-                    className="flex items-center gap-1.5 text-xs font-extrabold text-ink hover:text-brandBlue mb-3.5 transition-colors"
-                  >
-                    <Icon name="back" className="w-4 h-4" />
-                    <span>{lang === "ar" ? "العودة لاستكشاف الوكلاء" : "Back to Explore"}</span>
-                  </button>
-
-                  <div className="flex items-center gap-3">
-                    <SafeAvatar
-                      src={activeAgent.avatarUrl}
-                      alt={activeAgent.name}
-                      fallbackText={activeAgent.name}
-                      className="w-12 h-12 bg-paper border-2 border-line shadow-sm object-cover flex-shrink-0 text-base"
-                    />
-                    <div className="min-w-0">
-                      <h2 className="font-extrabold text-ink truncate text-sm" dir="auto">
-                        {activeAgent.name}
-                      </h2>
-                      <div className="flex items-center gap-1.5 mt-1">
-                        <span className="px-2 py-0.5 bg-brandYellow border border-line text-[10px] font-extrabold text-ink">
-                          {activeAgent.category}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <p className="text-xs font-semibold text-neutral-700 mt-3 leading-relaxed line-clamp-2" dir="auto">
-                    {activeAgent.description}
-                  </p>
-
-                  <div className="mt-3.5 flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        abortActiveStream();
-                        setActiveConversationId(null);
-                        setMessages([]);
-                        setShowMobileHistory(false);
-                      }}
-                      className="flex-1 py-2 px-3 bg-brandBlue hover:bg-brandBlueHover text-white text-xs font-extrabold nb-btn flex items-center justify-center gap-1.5"
-                    >
-                      <Icon name="plus" className="w-4 h-4" />
-                      <span>{lang === "ar" ? "محادثة جديدة" : "New Chat"}</span>
-                    </button>
-
-                    {token && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setMemoryError("");
-                          setShowMemoryModal(true);
-                        }}
-                        title={lang === "ar" ? "عرض ذاكرة التقدم المحفوظة" : "View saved progress"}
-                        aria-label={lang === "ar" ? "عرض ذاكرة التقدم المحفوظة" : "View saved progress"}
-                        className={`py-2 px-2.5 nb-btn text-xs font-extrabold flex items-center gap-1 ${
-                          agentMemory ? "bg-brandYellow text-ink" : "bg-paper text-neutral-500"
-                        }`}
-                      >
-                        <Icon name="brain" className="w-4 h-4" />
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                <div className="sidebar-scroll-area flex-1 min-h-0 p-3 space-y-2 bg-paper">
-                  <div className="px-1 py-1 text-[11px] font-extrabold uppercase tracking-wider text-neutral-500">
-                    {lang === "ar" ? "المحادثات السابقة" : "Chat History"}
-                  </div>
-                  {!token ? (
-                    <p className="text-xs font-semibold text-neutral-600 p-2 bg-cream border border-line">
-                      {lang === "ar" ? "سجّل الدخول لحفظ محادثاتك وتقدمك مع هذا الوكيل." : "Sign in to save your chat history and learning progress."}
-                    </p>
-                  ) : conversations.length === 0 ? (
-                    <p className="text-xs font-semibold text-neutral-500 px-2 py-3">
-                      {lang === "ar" ? "لا توجد محادثات سابقة بعد." : "No conversations yet."}
-                    </p>
-                  ) : (
-                    conversations.map((conv) => (
-                      <div
-                        key={conv._id}
-                        role="button"
-                        tabIndex={0}
-                        onClick={() => selectConversation(conv._id)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter" || e.key === " ") {
-                            e.preventDefault();
-                            selectConversation(conv._id);
-                          }
-                        }}
-                        className={`group flex items-center justify-between px-3 py-2.5 text-xs font-bold cursor-pointer border-2 transition-all ${
-                          activeConversationId === conv._id
-                            ? "bg-brandYellow border-line shadow-sm text-ink"
-                            : "bg-paper border-line hover:border-line text-ink"
-                        }`}
-                      >
-                        <span className="truncate pl-2" dir="auto">{conv.title || (lang === "ar" ? "محادثة جديدة" : "New chat")}</span>
-                        <button
-                          type="button"
-                          onClick={(e) => handleDeleteConversation(e, conv._id)}
-                          className="opacity-100 md:opacity-0 md:group-hover:opacity-100 p-1 text-ink hover:text-rose-600 transition-opacity"
-                          title={lang === "ar" ? "حذف المحادثة" : "Delete conversation"}
-                          aria-label={lang === "ar" ? "حذف المحادثة" : "Delete conversation"}
-                        >
-                          <Icon name="trash" className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </aside>
-
-              <section className="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden chat-grid-bg">
-                <div className="hidden md:flex flex-shrink-0 items-center justify-between px-6 py-3 bg-paper border-b-2 border-line">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <SafeAvatar
-                      src={activeAgent.avatarUrl}
-                      alt={activeAgent.name}
-                      fallbackText={activeAgent.name}
-                      className="w-9 h-9 border-2 border-line bg-cream object-cover text-sm"
-                    />
-                    <div className="flex items-center gap-2 min-w-0">
-                      <h3 className="text-base font-extrabold text-ink truncate" dir="auto">{activeAgent.name}</h3>
-                      <span className="px-2 py-0.5 bg-brandYellow border border-line text-[10px] font-extrabold text-ink">
-                        {activeAgent.category}
-                      </span>
-                      {agentMemory && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setMemoryError("");
-                            setShowMemoryModal(true);
-                          }}
-                          className="inline-flex items-center gap-1 px-2 py-0.5 bg-sageMist border border-line text-[10px] font-extrabold text-ink hover:bg-sageMist"
-                        >
-                          <Icon name="brain" className="w-3 h-3" /> {lang === "ar" ? "ذاكرة التقدم نشطة" : "Memory active"}
-                        </button>
-                      )}
-                    </div>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      abortActiveStream();
-                      setActiveConversationId(null);
-                      setMessages([]);
-                    }}
-                    className="nb-btn px-3.5 py-1.5 bg-brandYellow text-ink text-xs font-extrabold inline-flex items-center gap-1.5"
-                  >
-                    <Icon name="plus" className="w-3.5 h-3.5" />
-                    <span>{lang === "ar" ? "شات جديد" : "New Chat"}</span>
-                  </button>
-                </div>
-
-                <div className="md:hidden flex-shrink-0 flex items-center justify-between px-3 py-2 bg-paper border-b-2 border-line gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      abortActiveStream();
-                      setView("explore");
-                    }}
-                    className="nb-btn flex items-center gap-1 text-xs font-extrabold text-ink py-1 px-2.5 bg-cream"
-                  >
-                    <Icon name="back" className="w-3.5 h-3.5" />
-                    <span>{lang === "ar" ? "رجوع" : "Back"}</span>
-                  </button>
-                  <div className="min-w-0 flex-1 text-center">
-                    <span className="font-extrabold text-sm text-ink truncate block" dir="auto">
-                      {activeAgent.name}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1.5 flex-shrink-0">
-                    <button
-                      type="button"
-                      onClick={() => setShowMobileHistory(true)}
-                      aria-label={lang === "ar" ? "سجل المحادثات" : "Chat history"}
-                      className="nb-btn w-8 h-8 flex items-center justify-center bg-brandYellow text-ink"
-                    >
-                      <Icon name="chat" className="w-4 h-4" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        abortActiveStream();
-                        setActiveConversationId(null);
-                        setMessages([]);
-                      }}
-                      title={lang === "ar" ? "شات جديد" : "New chat"}
-                      aria-label={lang === "ar" ? "شات جديد" : "New chat"}
-                      className="nb-btn w-8 h-8 flex items-center justify-center bg-brandBlue text-white"
-                    >
-                      <Icon name="plus" className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-
-                <div
-                  ref={chatContainerRef}
-                  className="chat-scroll-area flex-1 min-h-0 px-3 sm:px-7 py-5 sm:py-7"
-                >
-                  <div className="max-w-3xl mx-auto">
-                    {loadingMessages ? (
-                      <div className="nb-box p-8 text-center font-extrabold text-sm">
-                        {lang === "ar" ? "جاري تحميل المحادثة..." : "Loading conversation..."}
-                      </div>
-                    ) : messages.length === 0 ? (
-                      <div className="py-6 sm:py-12 space-y-6">
-                        <div className="nb-box-lg p-6 sm:p-8 text-center max-w-xl mx-auto">
-                          <SafeAvatar
-                            src={activeAgent.avatarUrl}
-                            alt={activeAgent.name}
-                            fallbackText={activeAgent.name}
-                            className="w-20 h-20 mx-auto bg-cream border-2 border-line shadow-sm mb-4 text-2xl object-cover"
-                          />
-                          <h3 className="text-xl sm:text-2xl font-extrabold text-ink mb-2" dir="auto">
-                            {activeAgent.name}
-                          </h3>
-                          <p className="text-xs sm:text-sm font-semibold text-neutral-700 leading-relaxed" dir="auto">
-                            {activeAgent.description}
-                          </p>
-                          {agentMemory && (
-                            <div className="mt-4 p-2.5 bg-brandYellow/40 border-2 border-line text-xs font-extrabold text-ink">
-                              {lang === "ar" ? "لديك تقدّم محفوظ مع هذا الوكيل — اسأله: وين وصلنا؟" : "Your progress is saved — ask this agent where you left off."}
-                            </div>
-                          )}
-                        </div>
-
-                        {activeAgent.starterPrompts?.length > 0 && (
-                          <div className="max-w-xl mx-auto">
-                            <p className="text-xs font-extrabold uppercase tracking-wider text-ink mb-3 text-center">
-                              {lang === "ar" ? "ابدأ بأحد هذه الاقتراحات:" : "Suggested Starters:"}
-                            </p>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                              {activeAgent.starterPrompts.map((prompt, idx) => (
-                                <button
-                                  key={idx}
-                                  type="button"
-                                  onClick={() => handleSendMessage(prompt)}
-                                  dir="auto"
-                                  className="nb-card text-start p-4 text-xs sm:text-sm font-bold text-ink hover:bg-brandYellow"
-                                >
-                                  {prompt}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="space-y-5 pb-2">
-                        {messages.map((msg, i) => {
-                          if (sendingMessage && msg.role === "model" && !msg.text) return null;
-                          const isUser = msg.role === "user";
-                          const isLastStreaming = sendingMessage && !isUser && i === messages.length - 1;
-                          return (
-                            <div
-                              key={msg._id || i}
-                              dir={lang === "ar" ? "rtl" : "ltr"}
-                              className={`flex gap-3 min-w-0 ${isUser ? "justify-start" : "justify-end"}`}
-                            >
-                              {isUser && (
-                                <div className="w-8 h-8 flex-shrink-0 bg-brandYellow border-2 border-line shadow-sm flex items-center justify-center font-extrabold text-xs mt-1">
-                                  {lang === "ar" ? "أنت" : "You"}
-                                </div>
-                              )}
-                              <div className={`min-w-0 flex flex-col ${isUser ? "items-start max-w-[86%] sm:max-w-[78%]" : "items-end max-w-[calc(100%-44px)] sm:max-w-[90%]"}`}>
-                                <div
-                                  className={`chat-message-bubble min-w-0 w-full px-4 sm:px-5 py-3.5 border-2 border-line ${
-                                    isUser
-                                      ? "user-bubble bg-brandBlue text-white shadow-sm"
-                                      : "bg-paper text-ink shadow-sm"
-                                  }`}
-                                >
-                                  <FormattedMessage text={msg.text} uiLang={lang} />
-                                  {isLastStreaming && (
-                                    <span className="inline-block w-2.5 h-4 mr-1 align-middle bg-brandYellow border border-line animate-pulse" />
-                                  )}
-                                </div>
-                                {!isUser && !isLastStreaming && msg.text && (
-                                  <CopyMessageButton text={msg.text} lang={lang} />
-                                )}
-                              </div>
-                              {!isUser && (
-                                <SafeAvatar
-                                  src={activeAgent.avatarUrl}
-                                  alt={activeAgent.name}
-                                  fallbackText={activeAgent.name}
-                                  className="w-8 h-8 bg-paper border-2 border-line shadow-sm flex-shrink-0 mt-1 object-cover text-xs"
-                                />
-                              )}
-                            </div>
-                          );
-                        })}
-
-                        {sendingMessage && messages[messages.length - 1]?.role === "model" && !messages[messages.length - 1]?.text && (
-                          <div dir={lang === "ar" ? "rtl" : "ltr"} className="flex gap-3 justify-end">
-                            <div className="nb-box px-4 py-3 flex items-center gap-1.5">
-                              <span className="w-2.5 h-2.5 bg-brandYellow border border-line animate-bounce"></span>
-                              <span className="w-2.5 h-2.5 bg-brandBlue border border-line animate-bounce" style={{ animationDelay: "150ms" }}></span>
-                              <span className="w-2.5 h-2.5 bg-darkPanel animate-bounce" style={{ animationDelay: "300ms" }}></span>
-                            </div>
-                            <SafeAvatar
-                              src={activeAgent.avatarUrl}
-                              alt={activeAgent.name}
-                              fallbackText={activeAgent.name}
-                              className="w-8 h-8 bg-paper border-2 border-line flex-shrink-0 object-cover text-xs"
-                            />
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="chat-composer-wrap flex-shrink-0 px-3 sm:px-7 pt-3 pb-4 bg-paper border-t-2 border-line">
-                  <div className="max-w-3xl mx-auto">
-                    <div className="nb-box flex items-end gap-2 p-2">
-                      <textarea
-                        ref={textareaRef}
-                        rows="1"
-                        value={inputMessage}
-                        onChange={(e) => setInputMessage(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter" && !e.shiftKey) {
-                            e.preventDefault();
-                            handleSendMessage();
-                          }
-                        }}
-                        placeholder={lang === "ar" ? `اكتب رسالتك إلى ${activeAgent.name}...` : `Message ${activeAgent.name}...`}
-                        dir="auto"
-                        className="w-full min-w-0 max-h-[140px] bg-transparent px-3 py-2 text-sm font-bold text-ink placeholder-neutral-500 focus:outline-none resize-none leading-relaxed"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => handleSendMessage()}
-                        disabled={!inputMessage.trim() || sendingMessage}
-                        aria-label={lang === "ar" ? "إرسال" : "Send"}
-                        className="nb-btn p-2.5 sm:px-4 sm:py-2.5 bg-brandBlue hover:bg-brandBlueHover disabled:opacity-40 text-white font-extrabold text-xs flex items-center gap-1.5 flex-shrink-0"
-                      >
-                        <span className="hidden sm:inline">{lang === "ar" ? "إرسال" : "Send"}</span>
-                        <Icon name="send" className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </section>
-            </div>
+            <ChatWorkspace
+              lang={lang}
+              token={token}
+              activeAgent={activeAgent}
+              agentMemory={agentMemory}
+              conversations={conversations}
+              activeConversationId={activeConversationId}
+              messages={messages}
+              inputMessage={inputMessage}
+              setInputMessage={setInputMessage}
+              sendingMessage={sendingMessage}
+              loadingMessages={loadingMessages}
+              showMobileHistory={showMobileHistory}
+              setShowMobileHistory={setShowMobileHistory}
+              chatContainerRef={chatContainerRef}
+              textareaRef={textareaRef}
+              onNavigateExplore={() => navigateToExplore()}
+              onRefreshAgents={() => fetchAgents(1, false)}
+              onNewChat={() => {
+                abortActiveStream();
+                setActiveConversationId(null);
+                setMessages([]);
+                setShowMobileHistory(false);
+              }}
+              onOpenMemoryModal={() => {
+                setMemoryError("");
+                setShowMemoryModal(true);
+              }}
+              onSelectConversation={selectConversation}
+              onDeleteConversation={handleDeleteConversation}
+              onShareAgent={handleShareAgent}
+              onOpenCreator={openCreatorProfile}
+              onSendMessage={handleSendMessage}
+              onAbortStream={abortActiveStream}
+            />
           )}
 
-          {/* ========================================== */}
-          {/* MOBILE BOTTOM NAVIGATION                   */}
-          {/* ========================================== */}
           {!isChatView && (
-            <nav
-              aria-label={lang === "ar" ? "التنقل على الهاتف" : "Mobile navigation"}
-              className="sm:hidden fixed bottom-0 inset-x-0 z-30 bg-paper border-t-2 border-line px-2 pt-1.5 pb-[calc(0.4rem+env(safe-area-inset-bottom,0px))] flex items-center justify-around"
-            >
-              <button
-                type="button"
-                onClick={() => setView("explore")}
-                className={`flex flex-col items-center justify-center gap-0.5 py-1 px-4 text-[11px] font-extrabold ${
-                  view === "explore" ? "bg-brandYellow border border-line" : "text-ink"
-                }`}
-              >
-                <Icon name="search" className="w-4 h-4" />
-                <span>{lang === "ar" ? "استكشف" : "Explore"}</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  if (!token) {
-                    setAuthMode("login");
-                    setShowAuthModal(true);
-                  } else {
-                    setShowCreateModal(true);
-                  }
-                }}
-                className="flex flex-col items-center justify-center gap-0.5 py-1 px-4 bg-brandBlue text-white border border-line text-[11px] font-extrabold"
-              >
-                <Icon name="plus" className="w-4 h-4" />
-                <span>{lang === "ar" ? "إنشاء وكيل" : "Create"}</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={openProfile}
-                className={`flex flex-col items-center justify-center gap-0.5 py-1 px-4 text-[11px] font-extrabold ${
-                  view === "profile" ? "bg-brandYellow border border-line" : "text-ink"
-                }`}
-              >
-                <Icon name="user" className="w-4 h-4" />
-                <span>{lang === "ar" ? (user ? "حسابي" : "دخول") : (user ? "Profile" : "Sign in")}</span>
-              </button>
-            </nav>
+            <MobileBottomNav
+              lang={lang}
+              view={view}
+              user={user}
+              token={token}
+              onNavigateExplore={() => navigateToExplore()}
+              onOpenCreate={() => setShowCreateModal(true)}
+              onOpenLogin={() => {
+                setAuthMode("login");
+                setShowAuthModal(true);
+              }}
+              onOpenProfile={() => openProfile()}
+            />
           )}
 
-          {/* ========================================== */}
-          {/* MODAL 1: SPLIT-SCREEN AUTH                 */}
-          {/* ========================================== */}
           {showAuthModal && (
             <AuthModal
               mode={authMode}
@@ -2860,96 +2498,1186 @@
             />
           )}
 
-          {/* ========================================== */}
-          {/* MODAL 2: CREATE AGENT                      */}
-          {/* ========================================== */}
           {showCreateModal && (
             <CreateAgentModal
               lang={lang}
               onClose={() => setShowCreateModal(false)}
               onCreated={(newAgent) => {
                 setShowCreateModal(false);
-                notify(lang === "ar" ? "تم بناء ونشر الوكيل بنجاح!" : "Agent created and published!", "success");
-                fetchAgents();
+                notify(
+                  newAgent?.isPublic === false
+                    ? (lang === "ar" ? "تم بناء وحفظ الوكيل الخاص بك بنجاح!" : "Private agent created and saved!")
+                    : (lang === "ar" ? "تم بناء ونشر الوكيل بنجاح!" : "Agent created and published!"),
+                  "success"
+                );
+                fetchAgents(1, false);
                 if (newAgent?.slug) openAgentWorkspace(newAgent.slug);
               }}
               apiFetch={apiFetch}
             />
           )}
 
-          {/* ========================================== */}
-          {/* MODAL 3: AGENT SAVED MEMORY INSPECTOR      */}
-          {/* ========================================== */}
           {showMemoryModal && activeAgent && (
-            <div
-              onClick={(e) => { if (e.target === e.currentTarget && !clearingMemory) setShowMemoryModal(false); }}
-              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 glass-backdrop"
-            >
-              <div className="nb-box-lg animate-pop w-full max-w-lg p-6 bg-paper">
-                <div className="flex items-center justify-between pb-3 mb-4 border-b-2 border-line">
-                  <div className="flex items-center gap-2">
-                    <span className="p-1.5 bg-brandYellow border border-line">
-                      <Icon name="brain" className="w-4 h-4" />
-                    </span>
-                    <h3 className="font-extrabold text-base text-ink">{lang === "ar" ? "ذاكرة تقدمك مع" : "Progress memory for"} <bdi>{activeAgent.name}</bdi></h3>
-                  </div>
-                  <button
-                    type="button"
-                    disabled={clearingMemory}
-                    onClick={() => setShowMemoryModal(false)}
-                    aria-label={lang === "ar" ? "إغلاق" : "Close"}
-                    className="p-1 bg-paper border border-line"
-                  >
-                    <Icon name="close" className="w-4 h-4" />
-                  </button>
-                </div>
-
-                <div className="nb-box p-4 text-xs sm:text-sm font-semibold text-ink whitespace-pre-wrap max-h-64 overflow-y-auto leading-relaxed" dir="auto">
-                  {agentMemory || (lang === "ar" ? "لا يوجد ملخص تقدم محفوظ بعد. ابدأ التحدث مع الوكيل وسيتم حفظ مستواك تلقائياً." : "No saved progress yet. Start chatting and this agent will remember your progress.")}
-                </div>
-
-                {memoryError && (
-                  <div className="mt-4">
-                    <InlineAlert message={memoryError} />
-                  </div>
-                )}
-
-                <div className="flex items-center justify-between gap-3 mt-5">
-                  {agentMemory ? (
-                    <button
-                      type="button"
-                      disabled={clearingMemory}
-                      onClick={handleClearAgentMemory}
-                      className="nb-btn px-4 py-2 bg-rose-500 disabled:opacity-50 text-white text-xs font-extrabold"
-                    >
-                      {clearingMemory
-                        ? (lang === "ar" ? "جاري التصفير..." : "Clearing...")
-                        : (lang === "ar" ? "تصفير الذاكرة والبدء من الصفر" : "Clear memory and start over")}
-                    </button>
-                  ) : <span />}
-                  <button
-                    type="button"
-                    disabled={clearingMemory}
-                    onClick={() => setShowMemoryModal(false)}
-                    className="nb-btn px-5 py-2 bg-brandYellow text-ink text-xs font-extrabold"
-                  >
-                    {lang === "ar" ? "إغلاق" : "Close"}
-                  </button>
-                </div>
-              </div>
-            </div>
+            <MemoryModal
+              lang={lang}
+              activeAgent={activeAgent}
+              agentMemory={agentMemory}
+              memoryError={memoryError}
+              clearingMemory={clearingMemory}
+              onClose={() => setShowMemoryModal(false)}
+              onClearMemory={handleClearAgentMemory}
+            />
           )}
         </div>
       );
     }
 
     // ==========================================
-    // Profile Page Component
+    // 8. Layout & Navigation Components
     // ==========================================
-    function ProfilePage({ user, lang, agents, loading, error, onExplore, onCreate, onOpenAgent, onRefresh }) {
+    function TopNavbar({
+      lang,
+      setLang,
+      view,
+      user,
+      token,
+      onNavigateExplore,
+      onScrollToCatalog,
+      onScrollToHowItWorks,
+      onScrollToFaq,
+      onOpenProfile,
+      onOpenCreate,
+      onOpenLogin,
+      onLogout,
+    }) {
+      return (
+        <header className="sticky top-0 z-30 flex-shrink-0 bg-cream border-b-2 border-line">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-6 lg:gap-8">
+              <button
+                type="button"
+                onClick={onNavigateExplore}
+                className="text-start focus:outline-none"
+              >
+                <BrandLogo />
+              </button>
+
+              <nav className="hidden md:flex items-center gap-6 text-sm font-bold" aria-label={lang === "ar" ? "التنقل الرئيسي" : "Main navigation"}>
+                <button
+                  type="button"
+                  onClick={onScrollToCatalog}
+                  className={`transition-colors ${view === "explore" ? "text-brandBlue" : "text-ink hover:text-brandBlue"}`}
+                >
+                  {lang === "ar" ? "استكشف الوكلاء" : "Explore Agents"}
+                </button>
+                <button
+                  type="button"
+                  onClick={onScrollToHowItWorks}
+                  className="text-ink hover:text-brandBlue transition-colors"
+                >
+                  {lang === "ar" ? "كيف يعمل؟" : "How it Works"}
+                </button>
+                <button
+                  type="button"
+                  onClick={onScrollToFaq}
+                  className="text-ink hover:text-brandBlue transition-colors"
+                >
+                  {lang === "ar" ? "الأسئلة الشائعة" : "FAQ"}
+                </button>
+                {user && (
+                  <button
+                    type="button"
+                    onClick={onOpenProfile}
+                    className={`transition-colors ${view === "profile" ? "text-brandBlue underline decoration-2 underline-offset-4" : "text-ink hover:text-brandBlue"}`}
+                  >
+                    {lang === "ar" ? "حسابي" : "My Profile"}
+                  </button>
+                )}
+              </nav>
+            </div>
+
+            <div className="flex items-center gap-2 sm:gap-3">
+              <button
+                type="button"
+                onClick={() => setLang(lang === "ar" ? "en" : "ar")}
+                className="nb-btn px-2.5 sm:px-3 py-1.5 bg-paper text-xs font-extrabold text-ink flex items-center gap-1.5"
+                title={lang === "ar" ? "Switch to English" : "التحويل إلى العربية"}
+              >
+                <span>{lang === "ar" ? "EN" : "عربي"}</span>
+                <Icon name="globe" className="w-3.5 h-3.5" />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => (token ? onOpenCreate() : onOpenLogin())}
+                className="hidden sm:flex items-center gap-1.5 px-3.5 py-1.5 bg-brandYellow text-ink text-xs sm:text-sm font-extrabold nb-btn"
+              >
+                <Icon name="plus" className="w-4 h-4" />
+                <span>{lang === "ar" ? "إنشاء وكيل" : "Create Agent"}</span>
+              </button>
+
+              {user ? (
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={onOpenProfile}
+                    className="nb-btn flex items-center gap-2 bg-paper px-2.5 py-1 text-xs font-extrabold text-ink"
+                  >
+                    <SafeAvatar
+                      src={user.avatarUrl}
+                      alt={user.displayName || user.username}
+                      fallbackText={user.displayName || user.username}
+                      className="w-6 h-6 border border-line bg-cream text-[11px] object-cover"
+                    />
+                    <span className="hidden sm:inline max-w-[100px] truncate">{user.displayName || user.username}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={onLogout}
+                    title={lang === "ar" ? "تسجيل الخروج" : "Sign out"}
+                    aria-label={lang === "ar" ? "تسجيل الخروج" : "Sign out"}
+                    className="nb-btn p-1.5 bg-paper hover:bg-rose-100 text-ink"
+                  >
+                    <Icon name="logout" className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={onOpenLogin}
+                  className="nb-btn px-3.5 sm:px-4 py-1.5 bg-paper text-ink text-xs sm:text-sm font-extrabold"
+                >
+                  {lang === "ar" ? "تسجيل الدخول" : "Sign In"}
+                </button>
+              )}
+            </div>
+          </div>
+        </header>
+      );
+    }
+
+    function MobileBottomNav({ lang, view, user, token, onNavigateExplore, onOpenCreate, onOpenLogin, onOpenProfile }) {
+      return (
+        <nav
+          aria-label={lang === "ar" ? "التنقل على الهاتف" : "Mobile navigation"}
+          className="sm:hidden fixed bottom-0 inset-x-0 z-30 bg-paper border-t-2 border-line px-2 pt-1.5 pb-[calc(0.4rem+env(safe-area-inset-bottom,0px))] flex items-center justify-around"
+        >
+          <button
+            type="button"
+            onClick={onNavigateExplore}
+            className={`flex flex-col items-center justify-center gap-0.5 py-1 px-4 text-[11px] font-extrabold ${
+              view === "explore" ? "bg-brandYellow border border-line" : "text-ink"
+            }`}
+          >
+            <Icon name="search" className="w-4 h-4" />
+            <span>{lang === "ar" ? "استكشف" : "Explore"}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => (token ? onOpenCreate() : onOpenLogin())}
+            className="flex flex-col items-center justify-center gap-0.5 py-1 px-4 bg-brandBlue text-white border border-line text-[11px] font-extrabold"
+          >
+            <Icon name="plus" className="w-4 h-4" />
+            <span>{lang === "ar" ? "إنشاء وكيل" : "Create"}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={onOpenProfile}
+            className={`flex flex-col items-center justify-center gap-0.5 py-1 px-4 text-[11px] font-extrabold ${
+              view === "profile" ? "bg-brandYellow border border-line" : "text-ink"
+            }`}
+          >
+            <Icon name="user" className="w-4 h-4" />
+            <span>{lang === "ar" ? (user ? "حسابي" : "دخول") : (user ? "Profile" : "Sign in")}</span>
+          </button>
+        </nav>
+      );
+    }
+
+    // ==========================================
+    // 9. Page Views (Explore, Chat & Profile)
+    // ==========================================
+    function AgentCard({ agent, lang, onOpenAgent, onOpenCreator }) {
+      const theme = CARD_THEMES[agent.category] || CARD_THEMES.General;
+      const creatorUsername = agent.creator?.username;
+      return (
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={() => onOpenAgent(agent.slug)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              onOpenAgent(agent.slug);
+            }
+          }}
+          className="nb-card cursor-pointer flex flex-col justify-between overflow-hidden"
+        >
+          <div
+            style={{ backgroundColor: theme.bg, color: theme.text }}
+            className="agent-card-banner p-5 border-b border-line relative flex items-center justify-between gap-4 min-h-[132px]"
+          >
+            <div className="min-w-0 flex-1 z-10">
+              <span
+                style={{ backgroundColor: theme.badgeBg, color: theme.badgeText }}
+                className="inline-block px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider border border-line mb-2"
+              >
+                {agent.category || "GENERAL"}
+              </span>
+              <h4 className="font-extrabold text-lg sm:text-xl leading-snug line-clamp-2" dir="auto">
+                {agent.name}
+              </h4>
+            </div>
+
+            <div className="relative flex-shrink-0 z-10">
+              <SafeAvatar
+                src={agent.avatarUrl}
+                alt={agent.name}
+                fallbackText={agent.name}
+                className="w-16 h-16 bg-paper border-2 border-line shadow-sm object-cover text-lg"
+              />
+            </div>
+          </div>
+
+          <div className="p-5 flex-1 flex flex-col justify-between bg-paper">
+            <div>
+              <div className="flex items-center justify-between gap-2 text-xs font-bold text-neutral-500 mb-2">
+                {creatorUsername ? (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onOpenCreator(creatorUsername);
+                    }}
+                    title={lang === "ar" ? "عرض ملف صانع الوكيل" : "View creator profile"}
+                    className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-cream/90 hover:bg-brandYellow border border-line text-[11px] font-extrabold text-ink transition-colors max-w-[180px]"
+                  >
+                    <SafeAvatar
+                      src={agent.creator?.avatarUrl}
+                      alt={agent.creator?.displayName || creatorUsername}
+                      fallbackText={creatorUsername}
+                      className="w-4 h-4 rounded-full border border-line bg-paper object-cover text-[9px] flex-shrink-0"
+                    />
+                    <span className="truncate" dir="ltr">@{creatorUsername}</span>
+                  </button>
+                ) : (
+                  <span>@creator</span>
+                )}
+                <span className="inline-flex items-center gap-1 text-ink">
+                  <Icon name="eye" className="w-3.5 h-3.5" />
+                  {agent.viewsCount || 0}
+                </span>
+              </div>
+
+              <p className="text-sm font-semibold text-neutral-700 line-clamp-2 leading-relaxed mb-4" dir="auto">
+                {agent.description}
+              </p>
+            </div>
+
+            <div className="pt-3 border-t-2 border-line flex items-center justify-between">
+              <span className="px-2.5 py-1 bg-darkPanel text-brandYellow text-xs font-extrabold">
+                {lang === "ar" ? "ذاكرة ذكية مفعّلة" : "Smart Memory"}
+              </span>
+              <span className="font-extrabold text-sm text-brandBlue inline-flex items-center gap-1">
+                <span>{lang === "ar" ? "ابدأ الدردشة" : "Start Chat"}</span>
+                <Icon name="arrowLeft" className="w-4 h-4" />
+              </span>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function ExplorePage({
+      lang,
+      token,
+      agents,
+      loadingAgents,
+      loadingMoreAgents,
+      agentsLoadFailed,
+      agentsPagination,
+      totalAgentsCount,
+      totalViewsAll,
+      selectedCategory,
+      setSelectedCategory,
+      searchQuery,
+      setSearchQuery,
+      openFaqIndex,
+      setOpenFaqIndex,
+      catalogRef,
+      howItWorksRef,
+      faqRef,
+      onOpenCreate,
+      onOpenRegister,
+      onOpenLogin,
+      onScrollToCatalog,
+      onOpenAgent,
+      onOpenCreator,
+      onFetchAgents,
+    }) {
+      return (
+        <main className="flex-1">
+          {/* Hero & Global Stats */}
+          <section className="max-w-5xl mx-auto px-4 sm:px-6 pt-12 pb-16 sm:pt-16 sm:pb-20 text-center">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-brandYellow border-2 border-line shadow-sm text-xs sm:text-sm font-extrabold text-ink mb-6">
+              <span className="w-2 h-2 bg-darkPanel inline-block" />
+              <span>{lang === "ar" ? "إيه هو AgentTube؟" : "What is AgentTube?"}</span>
+            </div>
+
+            <h1 className="text-3xl sm:text-5xl lg:text-[56px] font-extrabold text-ink tracking-tight leading-[1.18] mb-6">
+              <span className="yellow-underline">
+                {lang === "ar"
+                  ? "نبني الوكلاء اللي كنا نتمنى نلاقيها"
+                  : "Building the AI Agents we wished existed"}
+              </span>
+            </h1>
+
+            <p className="text-base sm:text-xl font-medium text-neutral-700 max-w-2xl mx-auto leading-relaxed mb-8">
+              {lang === "ar"
+                ? "منصة وكلاء ذكاء اصطناعي للمستخدم العربي: برومبتات هندسية دقيقة، ذاكرة تراكمية تحفظ تقدمك، وإمكانية إنشاء وكلائك ومشاركتهم بسهولة."
+                : "An AI Agent Hub for Arabic & English creators, with structured XML prompts, cross-session memory, and easy agent creation and sharing."}
+            </p>
+
+            <div className="flex flex-wrap items-center justify-center gap-3.5 mb-12">
+              <button
+                type="button"
+                onClick={() => (token ? onOpenCreate() : onOpenRegister())}
+                className="nb-btn px-6 py-3 bg-brandBlue hover:bg-brandBlueHover text-white text-sm sm:text-base font-extrabold flex items-center gap-2"
+              >
+                <Icon name="sparkles" className="w-5 h-5" />
+                <span>{lang === "ar" ? "أنشئ وكيلك الآن مجاناً" : "Build Your Agent Now"}</span>
+              </button>
+              <button
+                type="button"
+                onClick={onScrollToCatalog}
+                className="nb-btn px-6 py-3 bg-paper hover:bg-brandYellow text-ink text-sm sm:text-base font-extrabold flex items-center gap-2"
+              >
+                <span>{lang === "ar" ? "تصفح الوكلاء الجاهزين" : "Browse Agents"}</span>
+                <Icon name="arrowLeft" className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-3xl mx-auto">
+              <div className="nb-box py-6 px-4 text-center">
+                <div className="text-2xl sm:text-3xl font-extrabold text-ink" dir="ltr">
+                  +{totalAgentsCount}
+                </div>
+                <p className="text-xs sm:text-sm font-bold text-neutral-600 mt-1">
+                  {lang === "ar" ? "وكيل ذكي متخصص" : "Specialized AI Agents"}
+                </p>
+              </div>
+              <div className="nb-box py-6 px-4 text-center">
+                <div className="text-2xl sm:text-3xl font-extrabold text-ink" dir="ltr">
+                  +{totalViewsAll.toLocaleString("en-US")}
+                </div>
+                <p className="text-xs sm:text-sm font-bold text-neutral-600 mt-1">
+                  {lang === "ar" ? "جلسة تفاعل وتعلّم" : "Learning & Chat Sessions"}
+                </p>
+              </div>
+              <div className="nb-box py-6 px-4 text-center">
+                <div className="text-2xl sm:text-3xl font-extrabold text-ink" dir="ltr">
+                  100%
+                </div>
+                <p className="text-xs sm:text-sm font-bold text-neutral-600 mt-1">
+                  {lang === "ar" ? "يدعم العربية بذاكرة مستمرة" : "Arabic & Persistent Memory"}
+                </p>
+              </div>
+            </div>
+          </section>
+
+          {/* How it Works */}
+          <section ref={howItWorksRef} className="max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-16 border-t-2 border-line">
+            <div className="mb-10">
+              <div className="inline-flex items-center gap-2 px-3 py-1 bg-brandYellow border-2 border-line shadow-sm text-xs font-extrabold text-ink mb-4">
+                <span className="w-2 h-2 bg-darkPanel inline-block" />
+                <span>{lang === "ar" ? "المنصة بتعمل إيه؟" : "What does it do?"}</span>
+              </div>
+              <h2 className="text-2xl sm:text-4xl font-extrabold text-ink leading-tight max-w-2xl">
+                <span className="yellow-underline">
+                  {lang === "ar"
+                    ? "نبني وكلاء أذكياء يشتغلوا فعلاً ويتذكروا تقدمك"
+                    : "Build smart agents that actually work & remember"}
+                </span>
+              </h2>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {[
+                {
+                  num: "01",
+                  type: "architect",
+                  title: lang === "ar" ? "هندسة الأوامر" : "Prompt Architect",
+                  desc: lang === "ar"
+                    ? "اكتب وصفاً بسيطاً لفكرتك، ومهندس الأوامر الذكي يحوله فوراً إلى هيكل XML احترافي يمنع الهلوسة ويضبط أسلوب الرد."
+                    : "Describe your idea in plain words, and our AI Architect converts it into a strict Hybrid XML instruction set.",
+                },
+                {
+                  num: "02",
+                  type: "memory",
+                  title: lang === "ar" ? "ذاكرة تراكمية" : "Persistent Memory",
+                  desc: lang === "ar"
+                    ? "كل وكيل يحفظ مستواك والدروس اللي أنجزتها تلقائياً؛ حتى لو فتحت محادثة جديدة هيكمل معاك من آخر نقطة توقفت عندها."
+                    : "Every agent automatically tracks your progress and milestones across separate chat sessions.",
+                },
+                {
+                  num: "03",
+                  type: "broadcast",
+                  title: lang === "ar" ? "إنشاء ومشاركة الوكلاء" : "Create & Share Agents",
+                  desc: lang === "ar"
+                    ? "أنشئ وكلاء ذكاء اصطناعي مخصصين لاحتياجاتك، وانشرهم ليستفيد منهم مجتمع المطورين والمتعلمين."
+                    : "Build AI agents tailored to your needs and share them with the community of developers and learners.",
+                },
+              ].map((step) => (
+                <div key={step.num} className="nb-box p-6 flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center gap-3 mb-5">
+                      <span className="w-8 h-8 bg-brandYellow border-2 border-line shadow-sm flex items-center justify-center font-extrabold text-sm">
+                        {step.num}
+                      </span>
+                      <h3 className="text-xl font-extrabold text-ink">{step.title}</h3>
+                    </div>
+                    <div className="py-4 bg-cream/60 border border-line mb-5">
+                      <FeatureIllustration type={step.type} />
+                    </div>
+                  </div>
+                  <p className="text-sm font-semibold text-neutral-700 leading-relaxed border-t-2 border-line pt-4">
+                    {step.desc}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* Agents Catalog & Pagination */}
+          <section ref={catalogRef} className="bg-catalogGray border-y-2 border-line py-12 sm:py-16">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6">
+              <div className="nb-box p-4 sm:p-6 mb-8">
+                <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <span className="px-3 py-1 bg-brandYellow border-2 border-line font-extrabold text-xs sm:text-sm">
+                      {lang === "ar" ? "مكتبة الوكلاء" : "AGENTS HUB"}
+                    </span>
+                    <h2 className="text-lg sm:text-2xl font-extrabold text-ink">
+                      {lang === "ar" ? "اختر وكيلك وابدأ المحادثة فوراً" : "Pick a Specialist & Start Chatting"}
+                    </h2>
+                  </div>
+
+                  <div className="relative w-full lg:w-80">
+                    <Icon name="search" className="catalog-search-icon w-4 h-4 text-ink absolute top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder={lang === "ar" ? "ابحث عن وكيل بالاسم..." : "Search agents by name..."}
+                      dir="auto"
+                      className="nb-input catalog-search-field w-full py-2 text-sm font-bold placeholder-neutral-500"
+                    />
+                    {searchQuery && (
+                      <button
+                        type="button"
+                        onClick={() => setSearchQuery("")}
+                        aria-label={lang === "ar" ? "مسح البحث" : "Clear search"}
+                        className="catalog-search-clear absolute top-1/2 -translate-y-1/2 text-ink hover:text-rose-600 p-1"
+                      >
+                        <Icon name="close" className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 overflow-x-auto pt-4 mt-4 border-t-2 border-line no-scrollbar">
+                  {CATEGORIES.map((cat) => {
+                    const active = selectedCategory === cat.id;
+                    return (
+                      <button
+                        key={cat.id}
+                        type="button"
+                        onClick={() => setSelectedCategory(cat.id)}
+                        className={`px-3.5 py-1.5 text-xs sm:text-sm font-extrabold whitespace-nowrap border-2 border-line transition-all ${
+                          active ? "bg-brandYellow text-ink shadow-sm" : "bg-paper text-ink hover:bg-cream"
+                        }`}
+                      >
+                        {lang === "ar" ? cat.ar : cat.en}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {loadingAgents ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {[1, 2, 3, 4, 5, 6].map((n) => (
+                    <AgentCardSkeleton key={n} />
+                  ))}
+                </div>
+              ) : agentsLoadFailed && agents.length === 0 ? (
+                <div className="nb-box p-12 text-center">
+                  <h3 className="text-xl font-extrabold text-ink mb-2">
+                    {lang === "ar" ? "تعذر تحميل قائمة الوكلاء حالياً" : "Couldn't load agents right now"}
+                  </h3>
+                  <p className="text-sm font-semibold text-neutral-600 mb-6">
+                    {lang === "ar" ? "يرجى المحاولة مرة أخرى بعد لحظات." : "Please try again in a moment."}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => onFetchAgents(1, false)}
+                    className="nb-btn px-5 py-2.5 bg-brandYellow text-ink font-extrabold text-sm inline-flex items-center gap-2"
+                  >
+                    <Icon name="refresh" className="w-4 h-4" />
+                    <span>{lang === "ar" ? "إعادة المحاولة" : "Try Again"}</span>
+                  </button>
+                </div>
+              ) : agents.length === 0 ? (
+                <div className="nb-box p-12 text-center">
+                  <h3 className="text-xl font-extrabold text-ink mb-2">
+                    {lang === "ar" ? "لا يوجد وكلاء مطابقون لبحثك" : "No agents found"}
+                  </h3>
+                  <p className="text-sm font-semibold text-neutral-600 mb-6">
+                    {lang === "ar" ? "كن أول من يبني وكيلاً في هذا التصنيف!" : "Be the first to build an agent in this category!"}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => (token ? onOpenCreate() : onOpenLogin())}
+                    className="nb-btn px-5 py-2.5 bg-brandBlue text-white font-extrabold text-sm inline-flex items-center gap-2"
+                  >
+                    <Icon name="plus" className="w-4 h-4" />
+                    <span>{lang === "ar" ? "إنشاء وكيل جديد" : "Create New Agent"}</span>
+                  </button>
+                </div>
+              ) : (
+                <React.Fragment>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {agents.map((agent) => (
+                      <AgentCard key={agent._id} agent={agent} lang={lang} onOpenAgent={onOpenAgent} onOpenCreator={onOpenCreator} />
+                    ))}
+                  </div>
+
+                  <div className="mt-8 flex flex-col items-center gap-3">
+                    <p className="text-xs font-bold text-neutral-600">
+                      {lang === "ar"
+                        ? `عرض ${agents.length} من أصل ${agentsPagination.total || agents.length} وكيل`
+                        : `Showing ${agents.length} of ${agentsPagination.total || agents.length} agents`}
+                    </p>
+                    {agentsPagination.page < agentsPagination.pages && (
+                      <button
+                        type="button"
+                        disabled={loadingMoreAgents}
+                        onClick={() => onFetchAgents(agentsPagination.page + 1, true)}
+                        className="nb-btn px-6 py-2.5 bg-brandYellow hover:bg-yellow-200 disabled:opacity-50 text-ink font-extrabold text-sm inline-flex items-center gap-2"
+                      >
+                        {loadingMoreAgents ? (
+                          <React.Fragment>
+                            <span className="w-4 h-4 border-2 border-ink/30 border-t-ink rounded-full animate-spin" />
+                            <span>{lang === "ar" ? "جاري التحميل..." : "Loading more..."}</span>
+                          </React.Fragment>
+                        ) : (
+                          <React.Fragment>
+                            <Icon name="plus" className="w-4 h-4" />
+                            <span>{lang === "ar" ? "تحميل المزيد من الوكلاء" : "Load more agents"}</span>
+                          </React.Fragment>
+                        )}
+                      </button>
+                    )}
+                  </div>
+                </React.Fragment>
+              )}
+            </div>
+          </section>
+
+          {/* FAQ Section */}
+          <section ref={faqRef} className="max-w-4xl mx-auto px-4 sm:px-6 py-14 sm:py-20">
+            <div className="text-center mb-10">
+              <div className="inline-flex items-center gap-2 px-3 py-1 bg-brandYellow border-2 border-line shadow-sm text-xs font-extrabold text-ink mb-4">
+                <span className="w-2 h-2 bg-darkPanel inline-block" />
+                <span>{lang === "ar" ? "الأسئلة الشائعة" : "FAQ"}</span>
+              </div>
+              <h2 className="text-2xl sm:text-4xl font-extrabold text-ink">
+                {lang === "ar" ? "إجابات واضحة على أهم أسئلتك" : "Clear Answers to Common Questions"}
+              </h2>
+            </div>
+
+            <div className="space-y-4">
+              {FAQ_ITEMS.map((item, idx) => {
+                const isOpen = openFaqIndex === idx;
+                return (
+                  <div key={idx} className="nb-box overflow-hidden">
+                    <button
+                      type="button"
+                      aria-expanded={isOpen}
+                      onClick={() => setOpenFaqIndex(isOpen ? -1 : idx)}
+                      className="w-full px-5 py-4 flex items-center justify-between gap-4 text-start bg-paper hover:bg-cream/50 transition-colors"
+                    >
+                      <span className="text-base sm:text-lg font-extrabold text-ink">
+                        {lang === "ar" ? item.q_ar : item.q_en}
+                      </span>
+                      <span className="w-8 h-8 flex-shrink-0 bg-brandYellow border-2 border-line flex items-center justify-center font-extrabold text-lg text-ink">
+                        {isOpen ? "×" : "+"}
+                      </span>
+                    </button>
+                    {isOpen && (
+                      <div className="px-5 py-4 border-t-2 border-line bg-paper text-sm sm:text-base font-semibold text-neutral-700 leading-relaxed">
+                        {lang === "ar" ? item.a_ar : item.a_en}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+
+          <footer className="bg-darkPanel text-cream border-t-2 border-line py-8 px-4 sm:px-6">
+            <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="flex items-center gap-2.5">
+                <span className="px-2 py-0.5 bg-brandYellow text-ink font-extrabold text-sm">AgentTube</span>
+                <span className="text-xs sm:text-sm font-bold text-neutral-300">
+                  {lang === "ar" ? "استوديو ومنصة وكلاء الذكاء الاصطناعي بالعربي" : "Arabic & English AI Agent Studio"}
+                </span>
+              </div>
+              <p className="text-xs font-bold text-neutral-400">
+                © {new Date().getFullYear()} AgentTube Studio
+              </p>
+            </div>
+          </footer>
+        </main>
+      );
+    }
+
+    function ChatWorkspace({
+      lang,
+      token,
+      activeAgent,
+      agentMemory,
+      conversations,
+      activeConversationId,
+      messages,
+      inputMessage,
+      setInputMessage,
+      sendingMessage,
+      loadingMessages,
+      showMobileHistory,
+      setShowMobileHistory,
+      chatContainerRef,
+      textareaRef,
+      onNavigateExplore,
+      onRefreshAgents,
+      onNewChat,
+      onOpenMemoryModal,
+      onSelectConversation,
+      onDeleteConversation,
+      onShareAgent,
+      onOpenCreator,
+      onSendMessage,
+      onAbortStream,
+    }) {
+      return (
+        <div className="flex-1 flex min-h-0 overflow-hidden bg-cream">
+          {showMobileHistory && (
+            <button
+              type="button"
+              aria-label={lang === "ar" ? "إغلاق سجل المحادثات" : "Close chat history"}
+              onClick={() => setShowMobileHistory(false)}
+              className="md:hidden fixed inset-0 z-40 bg-black/60"
+            />
+          )}
+
+          {/* Left/Right History Sidebar */}
+          <aside
+            id="conversation-history"
+            aria-label={lang === "ar" ? "سجل المحادثات" : "Chat history"}
+            className={`bg-paper ${
+              showMobileHistory
+                ? `fixed inset-y-0 ${lang === "ar" ? "right-0" : "left-0"} z-50 flex w-[min(86vw,320px)] border-s-2 border-line shadow-xl`
+                : "hidden"
+            } md:static md:z-auto md:flex md:w-[310px] md:h-full md:flex-shrink-0 flex-col border-e-2 border-line min-h-0 overflow-hidden`}
+          >
+            <div className="md:hidden flex-shrink-0 flex items-center justify-between px-4 py-3.5 bg-brandYellow border-b-2 border-line">
+              <span className="font-extrabold text-sm text-ink">{lang === "ar" ? "سجل المحادثات والذاكرة" : "History & Memory"}</span>
+              <button
+                type="button"
+                onClick={() => setShowMobileHistory(false)}
+                aria-label={lang === "ar" ? "إغلاق" : "Close"}
+                className="p-1 bg-paper border border-line text-ink"
+              >
+                <Icon name="close" className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="flex-shrink-0 p-4 border-b-2 border-line bg-cream/60">
+              <button
+                type="button"
+                onClick={() => {
+                  onNavigateExplore();
+                  onRefreshAgents();
+                }}
+                className="flex items-center gap-1.5 text-xs font-extrabold text-ink hover:text-brandBlue mb-3.5 transition-colors"
+              >
+                <Icon name="back" className="w-4 h-4" />
+                <span>{lang === "ar" ? "العودة لاستكشاف الوكلاء" : "Back to Explore"}</span>
+              </button>
+
+              <div className="flex items-center gap-3">
+                <SafeAvatar
+                  src={activeAgent.avatarUrl}
+                  alt={activeAgent.name}
+                  fallbackText={activeAgent.name}
+                  className="w-12 h-12 bg-paper border-2 border-line shadow-sm object-cover flex-shrink-0 text-base"
+                />
+                <div className="min-w-0">
+                  <h2 className="font-extrabold text-ink truncate text-sm" dir="auto">
+                    {activeAgent.name}
+                  </h2>
+                  <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                    <span className="px-2 py-0.5 bg-brandYellow border border-line text-[10px] font-extrabold text-ink">
+                      {activeAgent.category}
+                    </span>
+                    {activeAgent.isPublic === false && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-cream border border-line text-[10px] font-extrabold text-ink">
+                        <Icon name="lock" className="w-2.5 h-2.5" /> {lang === "ar" ? "خاص" : "Private"}
+                      </span>
+                    )}
+                    {activeAgent.creator?.username && (
+                      <button
+                        type="button"
+                        onClick={() => onOpenCreator(activeAgent.creator.username)}
+                        title={lang === "ar" ? "عرض ملف صانع الوكيل" : "View creator profile"}
+                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-paper hover:bg-brandYellow border border-line text-[10px] font-extrabold text-ink transition-colors max-w-[150px]"
+                      >
+                        <SafeAvatar
+                          src={activeAgent.creator.avatarUrl}
+                          alt={activeAgent.creator.displayName || activeAgent.creator.username}
+                          fallbackText={activeAgent.creator.username}
+                          className="w-3.5 h-3.5 rounded-full border border-line bg-cream object-cover text-[8px] flex-shrink-0"
+                        />
+                        <span className="truncate" dir="ltr">@{activeAgent.creator.username}</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <p className="text-xs font-semibold text-neutral-700 mt-3 leading-relaxed line-clamp-2" dir="auto">
+                {activeAgent.description}
+              </p>
+
+              <div className="mt-3.5 flex gap-2">
+                <button
+                  type="button"
+                  onClick={onNewChat}
+                  className="flex-1 py-2 px-3 bg-brandBlue hover:bg-brandBlueHover text-white text-xs font-extrabold nb-btn flex items-center justify-center gap-1.5"
+                >
+                  <Icon name="plus" className="w-4 h-4" />
+                  <span>{lang === "ar" ? "محادثة جديدة" : "New Chat"}</span>
+                </button>
+
+                {token && (
+                  <button
+                    type="button"
+                    onClick={onOpenMemoryModal}
+                    title={lang === "ar" ? "عرض ذاكرة التقدم المحفوظة" : "View saved progress"}
+                    aria-label={lang === "ar" ? "عرض ذاكرة التقدم المحفوظة" : "View saved progress"}
+                    className={`py-2 px-2.5 nb-btn text-xs font-extrabold flex items-center gap-1 ${
+                      agentMemory ? "bg-brandYellow text-ink" : "bg-paper text-neutral-500"
+                    }`}
+                  >
+                    <Icon name="brain" className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div className="sidebar-scroll-area flex-1 min-h-0 p-3 space-y-2 bg-paper">
+              <div className="px-1 py-1 text-[11px] font-extrabold uppercase tracking-wider text-neutral-500">
+                {lang === "ar" ? "المحادثات السابقة" : "Chat History"}
+              </div>
+              {!token ? (
+                <p className="text-xs font-semibold text-neutral-600 p-2 bg-cream border border-line">
+                  {lang === "ar" ? "سجّل الدخول لحفظ محادثاتك وتقدمك مع هذا الوكيل." : "Sign in to save your chat history and learning progress."}
+                </p>
+              ) : conversations.length === 0 ? (
+                <p className="text-xs font-semibold text-neutral-500 px-2 py-3">
+                  {lang === "ar" ? "لا توجد محادثات سابقة بعد." : "No conversations yet."}
+                </p>
+              ) : (
+                conversations.map((conv) => (
+                  <div
+                    key={conv._id}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => onSelectConversation(conv._id)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        onSelectConversation(conv._id);
+                      }
+                    }}
+                    className={`group flex items-center justify-between px-3 py-2.5 text-xs font-bold cursor-pointer border-2 transition-all ${
+                      activeConversationId === conv._id
+                        ? "bg-brandYellow border-line shadow-sm text-ink"
+                        : "bg-paper border-line hover:border-line text-ink"
+                    }`}
+                  >
+                    <span className="truncate pl-2" dir="auto">{conv.title || (lang === "ar" ? "محادثة جديدة" : "New chat")}</span>
+                    <button
+                      type="button"
+                      onClick={(e) => onDeleteConversation(e, conv._id)}
+                      className="opacity-100 md:opacity-0 md:group-hover:opacity-100 p-1 text-ink hover:text-rose-600 transition-opacity"
+                      title={lang === "ar" ? "حذف المحادثة" : "Delete conversation"}
+                      aria-label={lang === "ar" ? "حذف المحادثة" : "Delete conversation"}
+                    >
+                      <Icon name="trash" className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+          </aside>
+
+          {/* Main Chat Column */}
+          <section className="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden chat-grid-bg">
+            {/* Desktop Chat Header */}
+            <div className="hidden md:flex flex-shrink-0 items-center justify-between px-6 py-3 bg-paper border-b-2 border-line">
+              <div className="flex items-center gap-3 min-w-0">
+                <SafeAvatar
+                  src={activeAgent.avatarUrl}
+                  alt={activeAgent.name}
+                  fallbackText={activeAgent.name}
+                  className="w-9 h-9 border-2 border-line bg-cream object-cover text-sm"
+                />
+                <div className="flex items-center gap-2 min-w-0">
+                  <h3 className="text-base font-extrabold text-ink truncate" dir="auto">{activeAgent.name}</h3>
+                  <span className="px-2 py-0.5 bg-brandYellow border border-line text-[10px] font-extrabold text-ink">
+                    {activeAgent.category}
+                  </span>
+                  {activeAgent.isPublic === false && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-cream border border-line text-[10px] font-extrabold text-ink">
+                      <Icon name="lock" className="w-3 h-3" /> {lang === "ar" ? "خاص" : "Private"}
+                    </span>
+                  )}
+                  {activeAgent.creator?.username && (
+                    <button
+                      type="button"
+                      onClick={() => onOpenCreator(activeAgent.creator.username)}
+                      title={lang === "ar" ? "عرض ملف صانع الوكيل" : "View creator profile"}
+                      className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-cream hover:bg-brandYellow border border-line text-[11px] font-extrabold text-ink transition-colors flex-shrink-0 max-w-[155px]"
+                    >
+                      <SafeAvatar
+                        src={activeAgent.creator.avatarUrl}
+                        alt={activeAgent.creator.displayName || activeAgent.creator.username}
+                        fallbackText={activeAgent.creator.username}
+                        className="w-4 h-4 rounded-full border border-line bg-paper object-cover text-[9px] flex-shrink-0"
+                      />
+                      <span className="truncate" dir="ltr">@{activeAgent.creator.username}</span>
+                    </button>
+                  )}
+                  {agentMemory && (
+                    <button
+                      type="button"
+                      onClick={onOpenMemoryModal}
+                      className="inline-flex items-center gap-1 px-2 py-0.5 bg-sageMist border border-line text-[10px] font-extrabold text-ink hover:bg-sageMist"
+                    >
+                      <Icon name="brain" className="w-3 h-3" /> {lang === "ar" ? "ذاكرة التقدم نشطة" : "Memory active"}
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 flex-shrink-0">
+                {activeAgent.isPublic !== false && (
+                  <button
+                    type="button"
+                    onClick={() => onShareAgent(activeAgent)}
+                    title={lang === "ar" ? "نسخ رابط الوكيل" : "Copy agent link"}
+                    className="nb-btn px-3 py-1.5 bg-paper hover:bg-cream text-ink text-xs font-extrabold inline-flex items-center gap-1.5"
+                  >
+                    <Icon name="share" className="w-3.5 h-3.5" />
+                    <span>{lang === "ar" ? "مشاركة" : "Share"}</span>
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={onNewChat}
+                  className="nb-btn px-3.5 py-1.5 bg-brandYellow text-ink text-xs font-extrabold inline-flex items-center gap-1.5"
+                >
+                  <Icon name="plus" className="w-3.5 h-3.5" />
+                  <span>{lang === "ar" ? "شات جديد" : "New Chat"}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Mobile Chat Header */}
+            <div className="md:hidden flex-shrink-0 flex items-center justify-between px-3 py-2 bg-paper border-b-2 border-line gap-2">
+              <button
+                type="button"
+                onClick={onNavigateExplore}
+                className="nb-btn flex items-center gap-1 text-xs font-extrabold text-ink py-1 px-2.5 bg-cream"
+              >
+                <Icon name="back" className="w-3.5 h-3.5" />
+                <span>{lang === "ar" ? "رجوع" : "Back"}</span>
+              </button>
+              <div className="min-w-0 flex-1 flex items-center justify-center gap-1.5">
+                <span className="font-extrabold text-sm text-ink truncate" dir="auto">
+                  {activeAgent.name}
+                </span>
+                {activeAgent.isPublic === false && (
+                  <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-cream border border-line text-[10px] font-extrabold text-ink flex-shrink-0">
+                    <Icon name="lock" className="w-2.5 h-2.5" /> {lang === "ar" ? "خاص" : "Private"}
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-1.5 flex-shrink-0">
+                {activeAgent.isPublic !== false && (
+                  <button
+                    type="button"
+                    onClick={() => onShareAgent(activeAgent)}
+                    aria-label={lang === "ar" ? "نسخ رابط الوكيل" : "Copy agent link"}
+                    className="nb-btn w-8 h-8 flex items-center justify-center bg-paper text-ink"
+                  >
+                    <Icon name="share" className="w-4 h-4" />
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setShowMobileHistory(true)}
+                  aria-label={lang === "ar" ? "سجل المحادثات" : "Chat history"}
+                  className="nb-btn w-8 h-8 flex items-center justify-center bg-brandYellow text-ink"
+                >
+                  <Icon name="chat" className="w-4 h-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={onNewChat}
+                  title={lang === "ar" ? "شات جديد" : "New chat"}
+                  aria-label={lang === "ar" ? "شات جديد" : "New chat"}
+                  className="nb-btn w-8 h-8 flex items-center justify-center bg-brandBlue text-white"
+                >
+                  <Icon name="plus" className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* Messages Scroll Area */}
+            <div ref={chatContainerRef} className="chat-scroll-area flex-1 min-h-0 px-3 sm:px-7 py-5 sm:py-7">
+              <div className="max-w-3xl mx-auto">
+                {loadingMessages ? (
+                  <div className="nb-box p-8 text-center font-extrabold text-sm">
+                    {lang === "ar" ? "جاري تحميل المحادثة..." : "Loading conversation..."}
+                  </div>
+                ) : messages.length === 0 ? (
+                  <div className="py-6 sm:py-12 space-y-6">
+                    <div className="nb-box-lg p-6 sm:p-8 text-center max-w-xl mx-auto">
+                      <SafeAvatar
+                        src={activeAgent.avatarUrl}
+                        alt={activeAgent.name}
+                        fallbackText={activeAgent.name}
+                        className="w-20 h-20 mx-auto bg-cream border-2 border-line shadow-sm mb-4 text-2xl object-cover"
+                      />
+                      <h3 className="text-xl sm:text-2xl font-extrabold text-ink mb-2" dir="auto">
+                        {activeAgent.name}
+                      </h3>
+                      {activeAgent.creator?.username && (
+                        <button
+                          type="button"
+                          onClick={() => onOpenCreator(activeAgent.creator.username)}
+                          className="inline-flex items-center gap-1.5 px-3 py-1 mb-3 rounded-full bg-cream hover:bg-brandYellow border border-line text-xs font-extrabold text-ink transition-colors"
+                        >
+                          <SafeAvatar
+                            src={activeAgent.creator.avatarUrl}
+                            alt={activeAgent.creator.displayName || activeAgent.creator.username}
+                            fallbackText={activeAgent.creator.username}
+                            className="w-4 h-4 rounded-full border border-line bg-paper object-cover text-[9px] flex-shrink-0"
+                          />
+                          <span>{lang === "ar" ? "بواسطة" : "by"}</span>
+                          <span dir="ltr">@{activeAgent.creator.username}</span>
+                        </button>
+                      )}
+                      <p className="text-xs sm:text-sm font-semibold text-neutral-700 leading-relaxed" dir="auto">
+                        {activeAgent.description}
+                      </p>
+                      {agentMemory && (
+                        <div className="mt-4 p-2.5 bg-brandYellow/40 border-2 border-line text-xs font-extrabold text-ink">
+                          {lang === "ar" ? "لديك تقدّم محفوظ مع هذا الوكيل — اسأله: وين وصلنا؟" : "Your progress is saved — ask this agent where you left off."}
+                        </div>
+                      )}
+                    </div>
+
+                    {activeAgent.starterPrompts?.length > 0 && (
+                      <div className="max-w-xl mx-auto">
+                        <p className="text-xs font-extrabold uppercase tracking-wider text-ink mb-3 text-center">
+                          {lang === "ar" ? "ابدأ بأحد هذه الاقتراحات:" : "Suggested Starters:"}
+                        </p>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          {activeAgent.starterPrompts.map((prompt, idx) => (
+                            <button
+                              key={idx}
+                              type="button"
+                              onClick={() => onSendMessage(prompt)}
+                              dir="auto"
+                              className="nb-card text-start p-4 text-xs sm:text-sm font-bold text-ink hover:bg-brandYellow"
+                            >
+                              {prompt}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-5 pb-2">
+                    {messages.map((msg, i) => {
+                      if (sendingMessage && msg.role === "model" && !msg.text) return null;
+                      const isUser = msg.role === "user";
+                      const isLastStreaming = sendingMessage && !isUser && i === messages.length - 1;
+                      return (
+                        <div
+                          key={msg._id || i}
+                          dir={lang === "ar" ? "rtl" : "ltr"}
+                          className={`flex gap-3 min-w-0 ${isUser ? "justify-start" : "justify-end"}`}
+                        >
+                          {isUser && (
+                            <div className="w-8 h-8 flex-shrink-0 bg-brandYellow border-2 border-line shadow-sm flex items-center justify-center font-extrabold text-xs mt-1">
+                              {lang === "ar" ? "أنت" : "You"}
+                            </div>
+                          )}
+                          <div className={`min-w-0 flex flex-col ${isUser ? "items-start max-w-[86%] sm:max-w-[78%]" : "items-end max-w-[calc(100%-44px)] sm:max-w-[90%]"}`}>
+                            <div
+                              className={`chat-message-bubble min-w-0 w-full px-4 sm:px-5 py-3.5 border-2 border-line ${
+                                isUser
+                                  ? "user-bubble bg-brandBlue text-white shadow-sm"
+                                  : "bg-paper text-ink shadow-sm"
+                              }`}
+                            >
+                              <FormattedMessage text={msg.text} uiLang={lang} />
+                              {isLastStreaming && (
+                                <span className="inline-block w-2.5 h-4 mr-1 align-middle bg-brandYellow border border-line animate-pulse" />
+                              )}
+                            </div>
+                            {!isUser && !isLastStreaming && msg.text && (
+                              <CopyMessageButton text={msg.text} lang={lang} />
+                            )}
+                          </div>
+                          {!isUser && (
+                            <SafeAvatar
+                              src={activeAgent.avatarUrl}
+                              alt={activeAgent.name}
+                              fallbackText={activeAgent.name}
+                              className="w-8 h-8 bg-paper border-2 border-line shadow-sm flex-shrink-0 mt-1 object-cover text-xs"
+                            />
+                          )}
+                        </div>
+                      );
+                    })}
+
+                    {sendingMessage && messages[messages.length - 1]?.role === "model" && !messages[messages.length - 1]?.text && (
+                      <div dir={lang === "ar" ? "rtl" : "ltr"} className="flex gap-3 justify-end">
+                        <div className="nb-box px-4 py-3 flex items-center gap-1.5">
+                          <span className="w-2.5 h-2.5 bg-brandYellow border border-line animate-bounce"></span>
+                          <span className="w-2.5 h-2.5 bg-brandBlue border border-line animate-bounce" style={{ animationDelay: "150ms" }}></span>
+                          <span className="w-2.5 h-2.5 bg-darkPanel animate-bounce" style={{ animationDelay: "300ms" }}></span>
+                        </div>
+                        <SafeAvatar
+                          src={activeAgent.avatarUrl}
+                          alt={activeAgent.name}
+                          fallbackText={activeAgent.name}
+                          className="w-8 h-8 bg-paper border-2 border-line flex-shrink-0 object-cover text-xs"
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Chat Composer & Stop Button */}
+            <div className="chat-composer-wrap flex-shrink-0 px-3 sm:px-7 pt-3 pb-4 bg-paper border-t-2 border-line">
+              <div className="max-w-3xl mx-auto">
+                <div className="nb-box flex items-end gap-2 p-2">
+                  <textarea
+                    ref={textareaRef}
+                    rows="1"
+                    maxLength={4000}
+                    value={inputMessage}
+                    onChange={(e) => setInputMessage(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                        onSendMessage();
+                      }
+                    }}
+                    placeholder={lang === "ar" ? `اكتب رسالتك إلى ${activeAgent.name}...` : `Message ${activeAgent.name}...`}
+                    dir="auto"
+                    className="w-full min-w-0 max-h-[140px] bg-transparent px-3 py-2 text-sm font-bold text-ink placeholder-neutral-500 focus:outline-none resize-none leading-relaxed"
+                  />
+                  {sendingMessage ? (
+                    <button
+                      type="button"
+                      onClick={onAbortStream}
+                      aria-label={lang === "ar" ? "إيقاف التوليد" : "Stop generating"}
+                      className="nb-btn p-2.5 sm:px-4 sm:py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs flex items-center gap-1.5 flex-shrink-0"
+                    >
+                      <Icon name="stop" className="w-3.5 h-3.5" />
+                      <span className="hidden sm:inline">{lang === "ar" ? "إيقاف" : "Stop"}</span>
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => onSendMessage()}
+                      disabled={!inputMessage.trim()}
+                      aria-label={lang === "ar" ? "إرسال" : "Send"}
+                      className="nb-btn p-2.5 sm:px-4 sm:py-2.5 bg-brandBlue hover:bg-brandBlueHover disabled:opacity-40 text-white font-extrabold text-xs flex items-center gap-1.5 flex-shrink-0"
+                    >
+                      <span className="hidden sm:inline">{lang === "ar" ? "إرسال" : "Send"}</span>
+                      <Icon name="send" className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+      );
+    }
+
+    function ProfilePage({ user, lang, agents, loading, error, isOwnProfile = true, onExplore, onCreate, onOpenAgent, onRefresh, onUpdateBio, onShareCreator }) {
       const [filter, setFilter] = useState("");
+      const [editingBio, setEditingBio] = useState(false);
+      const [bioDraft, setBioDraft] = useState(user.bio || "");
+      const [savingBio, setSavingBio] = useState(false);
+      const [bioError, setBioError] = useState("");
+
+      useEffect(() => {
+        if (!editingBio) {
+          setBioDraft(user.bio || "");
+        }
+      }, [user.bio, editingBio]);
+
+      useEffect(() => {
+        setEditingBio(false);
+        setFilter("");
+        setBioError("");
+      }, [user.username, isOwnProfile]);
+
+      const handleSaveBio = async (e) => {
+        e.preventDefault();
+        if (savingBio || !onUpdateBio) return;
+        setBioError("");
+        setSavingBio(true);
+        try {
+          await onUpdateBio(bioDraft.trim());
+          setEditingBio(false);
+        } catch (err) {
+          setBioError(getFriendlyError(err, lang, "profile_bio"));
+        } finally {
+          setSavingBio(false);
+        }
+      };
+
       const name = user.displayName || user.username || (lang === "ar" ? "مبدع" : "Creator");
       const totalViews = agents.reduce((sum, agent) => sum + (Number(agent.viewsCount) || 0), 0);
+      const joinedLabel = user.createdAt
+        ? new Date(user.createdAt).toLocaleDateString(lang === "ar" ? "ar-EG" : "en-US", { year: "numeric", month: "short" })
+        : (lang === "ar" ? "صانع وكلاء" : "Agent Creator");
       const visibleAgents = agents.filter((agent) =>
         `${agent.name || ""} ${agent.description || ""} ${agent.category || ""}`
           .toLowerCase().includes(filter.toLowerCase().trim())
@@ -2966,9 +3694,22 @@
                 <button type="button" onClick={onExplore} className="nb-btn px-3.5 py-1.5 bg-paper text-ink text-xs font-extrabold">
                   {lang === "ar" ? "المنصة" : "Explore"}
                 </button>
-                <button type="button" onClick={onCreate} className="nb-btn px-3.5 py-1.5 bg-brandBlue text-white text-xs font-extrabold flex items-center gap-1">
-                  <Icon name="plus" className="w-3.5 h-3.5" /> {lang === "ar" ? "وكيل جديد" : "New agent"}
-                </button>
+                {user.username && onShareCreator && (
+                  <button
+                    type="button"
+                    onClick={() => onShareCreator(user.username)}
+                    className="nb-btn px-3 py-1.5 bg-paper hover:bg-cream text-ink text-xs font-extrabold inline-flex items-center gap-1"
+                    title={lang === "ar" ? "مشاركة الملف الشخصي" : "Share profile"}
+                  >
+                    <Icon name="share" className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">{lang === "ar" ? "مشاركة" : "Share"}</span>
+                  </button>
+                )}
+                {isOwnProfile && (
+                  <button type="button" onClick={onCreate} className="nb-btn px-3.5 py-1.5 bg-brandBlue text-white text-xs font-extrabold flex items-center gap-1">
+                    <Icon name="plus" className="w-3.5 h-3.5" /> {lang === "ar" ? "وكيل جديد" : "New agent"}
+                  </button>
+                )}
               </div>
             </div>
 
@@ -2979,34 +3720,115 @@
                     src={user.avatarUrl}
                     alt={name}
                     fallbackText={name}
-                    className="w-24 h-24 bg-brandYellow border-2 border-line shadow-sm object-cover text-3xl"
+                    className="w-24 h-24 bg-brandYellow border-2 border-line shadow-sm object-cover text-3xl flex-shrink-0"
                   />
-                  <div className="pb-1">
+                  <div className="pb-1 min-w-0">
                     <h1 className="text-2xl sm:text-3xl font-extrabold text-ink" dir="auto">{name}</h1>
                     <p className="text-sm font-bold text-brandBlue" dir="ltr">@{user.username}</p>
                   </div>
                 </div>
+
+                {isOwnProfile && !editingBio && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setBioDraft(user.bio || "");
+                      setBioError("");
+                      setEditingBio(true);
+                    }}
+                    className="nb-btn self-start sm:self-end px-3.5 py-1.5 bg-cream hover:bg-brandYellow text-ink text-xs font-extrabold inline-flex items-center gap-1.5"
+                  >
+                    <Icon name="edit" className="w-3.5 h-3.5" />
+                    <span>{user.bio ? (lang === "ar" ? "تعديل النبذة" : "Edit bio") : (lang === "ar" ? "إضافة نبذة" : "Add bio")}</span>
+                  </button>
+                )}
+              </div>
+
+              <div className="mb-5">
+                {!(isOwnProfile && editingBio) ? (
+                  <p className="text-sm font-semibold text-neutral-700 leading-relaxed" dir="auto">
+                    {user.bio || (isOwnProfile
+                      ? (lang === "ar" ? "لا توجد نبذة تعريفية بعد — أضف نبذة قصيرة عنك." : "No bio added yet — add a short bio about yourself.")
+                      : (lang === "ar" ? "صانع وكلاء ذكاء اصطناعي على AgentTube." : "AI Agent Creator on AgentTube."))}
+                  </p>
+                ) : (
+                  <form onSubmit={handleSaveBio} className="nb-box-sm p-4 bg-cream/70 space-y-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <label className="text-xs font-extrabold text-ink">
+                        {lang === "ar" ? "النبذة التعريفية (Bio)" : "Creator Bio"}
+                      </label>
+                      <span className="text-[11px] font-mono font-bold text-neutral-500" dir="ltr">
+                        {bioDraft.length}/240
+                      </span>
+                    </div>
+                    <textarea
+                      rows="2"
+                      maxLength={240}
+                      dir="auto"
+                      disabled={savingBio}
+                      value={bioDraft}
+                      onChange={(e) => {
+                        if (bioError) setBioError("");
+                        setBioDraft(e.target.value);
+                      }}
+                      placeholder={lang === "ar" ? "اكتب نبذة مختصرة عن تخصصك أو الوكلاء الذين تبنيهم..." : "Write a short bio about what you build..."}
+                      className="nb-input w-full px-3.5 py-2 text-sm font-bold leading-relaxed"
+                    />
+                    <InlineAlert message={bioError} />
+                    <div className="flex items-center justify-end gap-2">
+                      <button
+                        type="button"
+                        disabled={savingBio}
+                        onClick={() => {
+                          setEditingBio(false);
+                          setBioError("");
+                          setBioDraft(user.bio || "");
+                        }}
+                        className="nb-btn px-3.5 py-1.5 bg-paper text-ink text-xs font-extrabold"
+                      >
+                        {lang === "ar" ? "إلغاء" : "Cancel"}
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={savingBio}
+                        className="nb-btn px-4 py-1.5 bg-brandBlue hover:bg-brandBlueHover disabled:opacity-50 text-white text-xs font-extrabold inline-flex items-center gap-1.5"
+                      >
+                        {savingBio ? (lang === "ar" ? "جاري الحفظ..." : "Saving...") : (lang === "ar" ? "حفظ النبذة" : "Save bio")}
+                      </button>
+                    </div>
+                  </form>
+                )}
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 border-t-2 border-line">
                 <div className="nb-box-sm p-4 bg-cream">
                   <div className="text-2xl font-extrabold text-ink">{loading ? "—" : agents.length}</div>
-                  <p className="text-xs font-bold text-neutral-600">{lang === "ar" ? "وكلاء منشورون" : "Published agents"}</p>
+                  <p className="text-xs font-bold text-neutral-600">
+                    {isOwnProfile ? (lang === "ar" ? "وكلائي" : "My agents") : (lang === "ar" ? "وكلاء منشورون" : "Published agents")}
+                  </p>
                 </div>
                 <div className="nb-box-sm p-4 bg-cream">
                   <div className="text-2xl font-extrabold text-ink">{loading ? "—" : totalViews.toLocaleString("en-US")}</div>
                   <p className="text-xs font-bold text-neutral-600">{lang === "ar" ? "إجمالي المشاهدات" : "Total views"}</p>
                 </div>
                 <div className="nb-box-sm p-4 bg-cream">
-                  <div className="text-sm font-extrabold text-ink truncate" dir="ltr">{user.email}</div>
-                  <p className="text-xs font-bold text-neutral-600">{lang === "ar" ? "البريد الإلكتروني" : "Email"}</p>
+                  <div className="text-sm font-extrabold text-ink truncate" dir={isOwnProfile ? "ltr" : "auto"}>
+                    {isOwnProfile ? user.email : joinedLabel}
+                  </div>
+                  <p className="text-xs font-bold text-neutral-600">
+                    {isOwnProfile ? (lang === "ar" ? "البريد الإلكتروني" : "Email") : (lang === "ar" ? "تاريخ الانضمام" : "Joined")}
+                  </p>
                 </div>
               </div>
             </div>
           </section>
 
           <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
-            <h2 className="text-xl sm:text-2xl font-extrabold text-ink">{lang === "ar" ? "وكلائي المنشورون" : "My published agents"}</h2>
+            <h2 className="text-xl sm:text-2xl font-extrabold text-ink">
+              {isOwnProfile
+                ? (lang === "ar" ? "وكلائي (العامة والخاصة)" : "My agents (Public & Private)")
+                : (lang === "ar" ? `الوكلاء المنشورون بواسطة @${user.username}` : `Published agents by @${user.username}`)}
+            </h2>
             <button type="button" onClick={onRefresh} disabled={loading} className="nb-btn px-3.5 py-1.5 bg-paper text-xs font-extrabold inline-flex items-center gap-1.5">
               <Icon name="refresh" className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} /> {lang === "ar" ? "تحديث" : "Refresh"}
             </button>
@@ -3017,7 +3839,7 @@
               <input
                 value={filter}
                 onChange={(e) => setFilter(e.target.value)}
-                placeholder={lang === "ar" ? "ابحث في وكلائك..." : "Search your agents..."}
+                placeholder={isOwnProfile ? (lang === "ar" ? "ابحث في وكلائك..." : "Search your agents...") : (lang === "ar" ? "ابحث في وكلاء هذا الصانع..." : "Search creator's agents...")}
                 className="nb-input w-full px-4 py-2.5 text-sm font-bold"
               />
             </div>
@@ -3030,15 +3852,30 @@
           ) : error ? (
             <div className="nb-box p-8 text-center space-y-4">
               <InlineAlert message={error} />
-              <button type="button" onClick={onRefresh} className="nb-btn px-4 py-2 bg-brandYellow text-xs font-extrabold">{lang === "ar" ? "إعادة المحاولة" : "Try again"}</button>
+              <div className="flex items-center justify-center gap-2">
+                <button type="button" onClick={onRefresh} className="nb-btn px-4 py-2 bg-brandYellow text-xs font-extrabold">{lang === "ar" ? "إعادة المحاولة" : "Try again"}</button>
+                {!isOwnProfile && (
+                  <button type="button" onClick={onExplore} className="nb-btn px-4 py-2 bg-paper text-xs font-extrabold">{lang === "ar" ? "العودة للمنصة" : "Back to Explore"}</button>
+                )}
+              </div>
             </div>
           ) : visibleAgents.length === 0 ? (
             <div className="nb-box p-10 text-center">
               <h3 className="text-lg font-extrabold text-ink mb-2">{lang === "ar" ? "لا يوجد وكلاء منشورون بعد" : "No agents published yet"}</h3>
-              <p className="text-sm font-semibold text-neutral-600 mb-5">{lang === "ar" ? "ابدأ ببناء أول وكيل ذكي مخصص لك الآن." : "Create your first custom AI agent."}</p>
-              <button type="button" onClick={onCreate} className="nb-btn px-5 py-2.5 bg-brandBlue text-white text-sm font-extrabold inline-flex items-center gap-2">
-                <Icon name="plus" className="w-4 h-4" /> {lang === "ar" ? "إنشاء أول وكيل" : "Create your first agent"}
-              </button>
+              <p className="text-sm font-semibold text-neutral-600 mb-5">
+                {isOwnProfile
+                  ? (lang === "ar" ? "ابدأ ببناء أول وكيل ذكي مخصص لك الآن." : "Create your first custom AI agent.")
+                  : (lang === "ar" ? "لم ينشر هذا الصانع أي وكلاء عامة حتى الآن." : "This creator hasn't published any public agents yet.")}
+              </p>
+              {isOwnProfile ? (
+                <button type="button" onClick={onCreate} className="nb-btn px-5 py-2.5 bg-brandBlue text-white text-sm font-extrabold inline-flex items-center gap-2">
+                  <Icon name="plus" className="w-4 h-4" /> {lang === "ar" ? "إنشاء أول وكيل" : "Create your first agent"}
+                </button>
+              ) : (
+                <button type="button" onClick={onExplore} className="nb-btn px-5 py-2.5 bg-brandYellow text-ink text-sm font-extrabold">
+                  {lang === "ar" ? "تصفح جميع الوكلاء" : "Browse all agents"}
+                </button>
+              )}
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -3059,7 +3896,17 @@
                       />
                       <div className="min-w-0 flex-1">
                         <h3 className="font-extrabold text-base text-ink truncate" dir="auto">{agent.name}</h3>
-                        <span className="px-2 py-0.5 bg-brandYellow border border-line text-[10px] font-extrabold">{agent.category}</span>
+                        <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                          <span className="px-2 py-0.5 bg-brandYellow border border-line text-[10px] font-extrabold">{agent.category}</span>
+                          {isOwnProfile && (
+                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 border border-line text-[10px] font-extrabold ${
+                              agent.isPublic === false ? "bg-cream text-ink" : "bg-sageMist text-ink"
+                            }`}>
+                              {agent.isPublic === false && <Icon name="lock" className="w-2.5 h-2.5" />}
+                              {agent.isPublic === false ? (lang === "ar" ? "خاص" : "Private") : (lang === "ar" ? "عام" : "Public")}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
                     <p className="text-xs font-semibold text-neutral-700 line-clamp-2 mb-4" dir="auto">{agent.description}</p>
@@ -3080,8 +3927,72 @@
     }
 
     // ==========================================
-    // Split-Screen Auth Modal (With Inline Error Display)
+    // 10. Modals (Memory, Auth & Create Agent)
     // ==========================================
+    function MemoryModal({ lang, activeAgent, agentMemory, memoryError, clearingMemory, onClose, onClearMemory }) {
+      return (
+        <div
+          onClick={(e) => { if (e.target === e.currentTarget && !clearingMemory) onClose(); }}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 glass-backdrop"
+        >
+          <div className="nb-box-lg animate-pop w-full max-w-lg p-6 bg-paper">
+            <div className="flex items-center justify-between pb-3 mb-4 border-b-2 border-line">
+              <div className="flex items-center gap-2">
+                <span className="p-1.5 bg-brandYellow border border-line">
+                  <Icon name="brain" className="w-4 h-4" />
+                </span>
+                <h3 className="font-extrabold text-base text-ink">
+                  {lang === "ar" ? "ذاكرة تقدمك مع" : "Progress memory for"} <bdi>{activeAgent.name}</bdi>
+                </h3>
+              </div>
+              <button
+                type="button"
+                disabled={clearingMemory}
+                onClick={onClose}
+                aria-label={lang === "ar" ? "إغلاق" : "Close"}
+                className="p-1 bg-paper border border-line"
+              >
+                <Icon name="close" className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="nb-box p-4 text-xs sm:text-sm font-semibold text-ink whitespace-pre-wrap max-h-64 overflow-y-auto leading-relaxed" dir="auto">
+              {agentMemory || (lang === "ar" ? "لا يوجد ملخص تقدم محفوظ بعد. ابدأ التحدث مع الوكيل وسيتم حفظ مستواك تلقائياً." : "No saved progress yet. Start chatting and this agent will remember your progress.")}
+            </div>
+
+            {memoryError && (
+              <div className="mt-4">
+                <InlineAlert message={memoryError} />
+              </div>
+            )}
+
+            <div className="flex items-center justify-between gap-3 mt-5">
+              {agentMemory ? (
+                <button
+                  type="button"
+                  disabled={clearingMemory}
+                  onClick={onClearMemory}
+                  className="nb-btn px-4 py-2 bg-rose-500 disabled:opacity-50 text-white text-xs font-extrabold"
+                >
+                  {clearingMemory
+                    ? (lang === "ar" ? "جاري التصفير..." : "Clearing...")
+                    : (lang === "ar" ? "تصفير الذاكرة والبدء من الصفر" : "Clear memory and start over")}
+                </button>
+              ) : <span />}
+              <button
+                type="button"
+                disabled={clearingMemory}
+                onClick={onClose}
+                className="nb-btn px-5 py-2 bg-brandYellow text-ink text-xs font-extrabold"
+              >
+                {lang === "ar" ? "إغلاق" : "Close"}
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     function AuthModal({ mode, setMode, lang, onClose, onSuccess, apiFetch }) {
       const [form, setForm] = useState({
         username: "",
@@ -3234,6 +4145,28 @@
                     />
                   </div>
 
+                  {mode === "register" && (
+                    <div>
+                      <div className="flex items-center justify-between gap-2 mb-1">
+                        <label className="block text-xs font-extrabold text-ink">
+                          {lang === "ar" ? "نبذة تعريفية (اختياري)" : "Bio (optional)"}
+                        </label>
+                        <span className="text-[11px] font-mono font-bold text-neutral-500" dir="ltr">
+                          {form.bio.length}/240
+                        </span>
+                      </div>
+                      <input
+                        type="text"
+                        maxLength={240}
+                        dir="auto"
+                        placeholder={lang === "ar" ? "مثال: مطور وكلاء ذكاء اصطناعي ومعلم برمجة" : "e.g. AI Agent Creator & Educator"}
+                        value={form.bio}
+                        onChange={(e) => updateField("bio", e.target.value)}
+                        className="nb-input w-full px-3.5 py-2.5 text-sm font-bold"
+                      />
+                    </div>
+                  )}
+
                   {/* Visible inline error directly inside the auth form */}
                   <InlineAlert message={formError} />
 
@@ -3322,15 +4255,52 @@
       const [form, setForm] = useState({
         name: "",
         description: "",
-        category: "Education",
+        category: "General",
         rawPrompt: "",
         starter1: "",
         starter2: "",
         temperature: 0.4,
         isPublic: true,
       });
+      const [pdfFile, setPdfFile] = useState(null);
+      const [isDraggingPdf, setIsDraggingPdf] = useState(false);
       const [loading, setLoading] = useState(false);
       const [formError, setFormError] = useState("");
+      const pdfInputRef = useRef(null);
+
+      const isEducational = form.category === "Education";
+
+      const formatFileSize = (bytes) => {
+        if (!Number.isFinite(bytes) || bytes < 1024) return `${bytes || 0} B`;
+        if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+        return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+      };
+
+      const clearPdfFile = () => {
+        setPdfFile(null);
+        if (pdfInputRef.current) pdfInputRef.current.value = "";
+      };
+
+      const handlePdfSelect = (file) => {
+        if (!file || loading) return;
+        const isPdfMime = file.type === "application/pdf";
+        const isPdfExt = /\.pdf$/i.test(file.name || "");
+        if (!isPdfMime && !(file.type === "" && isPdfExt)) {
+          setFormError(getFriendlyError(new AppError("PDF_INVALID_TYPE", 400, "create_agent"), lang, "create_agent"));
+          if (pdfInputRef.current) pdfInputRef.current.value = "";
+          return;
+        }
+        if (file.size > MAX_PDF_SIZE_BYTES) {
+          setFormError(getFriendlyError(new AppError("PDF_TOO_LARGE", 400, "create_agent"), lang, "create_agent"));
+          if (pdfInputRef.current) pdfInputRef.current.value = "";
+          return;
+        }
+        const normalizedFile = isPdfMime
+          ? file
+          : new File([file], file.name, { type: "application/pdf", lastModified: file.lastModified });
+        setFormError("");
+        setPdfFile(normalizedFile);
+      };
 
       useEffect(() => {
         const onKey = (e) => { if (e.key === "Escape" && !loading) onClose(); };
@@ -3340,6 +4310,9 @@
 
       const updateField = (key, value) => {
         if (formError) setFormError("");
+        if (key === "category" && value !== "Education") {
+          clearPdfFile();
+        }
         setForm((prev) => ({ ...prev, [key]: value }));
       };
 
@@ -3352,10 +4325,23 @@
             .map((s) => s.trim())
             .filter(Boolean);
 
-          const res = await apiFetch("/api/agents", {
-            method: "POST",
-            timeoutMs: BUILD_AGENT_TIMEOUT_MS,
-            body: JSON.stringify({
+          const hasPdf = Boolean(isEducational && pdfFile);
+          let requestBody;
+
+          if (hasPdf) {
+            const fd = new FormData();
+            fd.append("name", form.name.trim());
+            fd.append("description", form.description.trim());
+            fd.append("category", form.category);
+            fd.append("rawPrompt", form.rawPrompt.trim());
+            fd.append("temperature", String(form.temperature));
+            fd.append("enableWebSearch", "false");
+            fd.append("isPublic", String(Boolean(form.isPublic)));
+            fd.append("starterPrompts", JSON.stringify(starterPrompts));
+            fd.append("pdfFile", pdfFile);
+            requestBody = fd;
+          } else {
+            requestBody = JSON.stringify({
               name: form.name.trim(),
               description: form.description.trim(),
               category: form.category,
@@ -3364,7 +4350,13 @@
               enableWebSearch: false,
               isPublic: form.isPublic,
               starterPrompts,
-            }),
+            });
+          }
+
+          const res = await apiFetch("/api/agents", {
+            method: "POST",
+            timeoutMs: hasPdf ? BUILD_AGENT_PDF_TIMEOUT_MS : BUILD_AGENT_TIMEOUT_MS,
+            body: requestBody,
           }, "create_agent");
 
           onCreated(res.data);
@@ -3411,6 +4403,7 @@
                   <input
                     type="text"
                     required
+                    maxLength={100}
                     dir="auto"
                     placeholder={lang === "ar" ? "مثال: مدرس بايثون العربي" : "e.g. Python Tutor"}
                     value={form.name}
@@ -3437,6 +4430,7 @@
                 <input
                   type="text"
                   required
+                  maxLength={400}
                   dir="auto"
                   placeholder={lang === "ar" ? "ماذا يقدم هذا الوكيل للمستخدم؟" : "What does your agent help people do?"}
                   value={form.description}
@@ -3452,19 +4446,123 @@
                 <textarea
                   rows="4"
                   required
+                  maxLength={8000}
                   dir="auto"
-                  placeholder={lang === "ar" ? "اشرح دور الوكيل، أسلوبه في الشرح أو العمل، والقواعد التي يجب أن يلتزم بها..." : "Describe the agent’s role, tone, goals and guidelines..."}
+                  placeholder={isEducational
+                    ? (lang === "ar" ? "اشرح دور المعلم، أسلوبه في التبسيط والتقييم، وكيف يستفيد من المنهج المرفق..." : "Describe the tutor's role, teaching style, and how to guide learners through the material...")
+                    : (lang === "ar" ? "اشرح دور الوكيل، أسلوبه في الشرح أو العمل، والقواعد التي يجب أن يلتزم بها..." : "Describe the agent’s role, tone, goals and guidelines...")}
                   value={form.rawPrompt}
                   onChange={(e) => updateField("rawPrompt", e.target.value)}
                   className="nb-input w-full px-3.5 py-2.5 text-sm font-bold leading-relaxed"
                 />
               </div>
 
+              {isEducational && (
+                <div>
+                  <div className="flex items-center justify-between gap-2 mb-1.5">
+                    <label className="block text-xs font-extrabold text-ink">
+                      {lang === "ar" ? "ملف المنهج أو المرجع (PDF — اختياري)" : "Reference PDF / Curriculum (Optional)"}
+                    </label>
+                    <span className="px-2 py-0.5 bg-sageMist border border-line text-[10px] font-extrabold text-ink">
+                      {lang === "ar" ? "للتعليم فقط • حتى 50MB" : "Education only • Max 50MB"}
+                    </span>
+                  </div>
+
+                  <input
+                    ref={pdfInputRef}
+                    type="file"
+                    accept=".pdf,application/pdf"
+                    disabled={loading}
+                    onChange={(e) => handlePdfSelect(e.target.files?.[0])}
+                    className="hidden"
+                  />
+
+                  {!pdfFile ? (
+                    <div
+                      role="button"
+                      tabIndex={loading ? -1 : 0}
+                      aria-label={lang === "ar" ? "اختيار أو سحب ملف PDF" : "Choose or drag a PDF file"}
+                      onClick={() => { if (!loading) pdfInputRef.current?.click(); }}
+                      onKeyDown={(e) => {
+                        if (!loading && (e.key === "Enter" || e.key === " ")) {
+                          e.preventDefault();
+                          pdfInputRef.current?.click();
+                        }
+                      }}
+                      onDragOver={(e) => {
+                        e.preventDefault();
+                        if (!loading) setIsDraggingPdf(true);
+                      }}
+                      onDragLeave={(e) => {
+                        e.preventDefault();
+                        setIsDraggingPdf(false);
+                      }}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        setIsDraggingPdf(false);
+                        if (!loading) handlePdfSelect(e.dataTransfer?.files?.[0]);
+                      }}
+                      className={`nb-box-sm p-4 border-2 border-dashed transition-colors cursor-pointer flex items-center gap-3 ${
+                        isDraggingPdf
+                          ? "bg-brandYellow/50 border-brandBlue"
+                          : "bg-cream/70 hover:bg-cream border-line"
+                      } ${loading ? "opacity-50 pointer-events-none" : ""}`}
+                    >
+                      <span className="w-10 h-10 flex-shrink-0 bg-brandYellow border border-line rounded-xl flex items-center justify-center text-ink">
+                        <Icon name="upload" className="w-5 h-5" />
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs sm:text-sm font-extrabold text-ink">
+                          {lang === "ar" ? "اسحب ملف PDF هنا أو اضغط للاختيار" : "Drag & drop a PDF here, or click to browse"}
+                        </p>
+                        <p className="text-[11px] font-semibold text-neutral-600 mt-0.5 leading-relaxed">
+                          {lang === "ar"
+                            ? "سيستخرج مهندس الأوامر فصول المنهج ومفاهيمه تلقائياً ليدرّس الوكيل منه بدقة."
+                            : "Our Prompt Architect extracts chapters & key concepts so your tutor teaches strictly from it."}
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="nb-box-sm p-3 bg-sageMist/60 border border-line flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <span className="w-10 h-10 flex-shrink-0 bg-paper border border-line rounded-xl flex items-center justify-center text-brandBlue">
+                          <Icon name="file" className="w-5 h-5" />
+                        </span>
+                        <div className="min-w-0">
+                          <p className="text-xs sm:text-sm font-extrabold text-ink truncate" dir="auto">
+                            {pdfFile.name}
+                          </p>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <span className="text-[11px] font-mono font-bold text-neutral-600" dir="ltr">
+                              {formatFileSize(pdfFile.size)}
+                            </span>
+                            <span className="px-1.5 py-0.5 bg-paper border border-line text-[10px] font-extrabold text-brandBlue">
+                              {lang === "ar" ? "PDF جاهز" : "PDF Ready"}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        disabled={loading}
+                        onClick={clearPdfFile}
+                        aria-label={lang === "ar" ? "إزالة ملف PDF" : "Remove PDF file"}
+                        title={lang === "ar" ? "إزالة الملف" : "Remove file"}
+                        className="nb-btn p-2 bg-paper hover:bg-rose-50 text-ink hover:text-rose-600 disabled:opacity-40 flex-shrink-0"
+                      >
+                        <Icon name="trash" className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-extrabold text-ink mb-1">{lang === "ar" ? "سؤال مقترح 1 (اختياري)" : "Starter prompt 1 (optional)"}</label>
                   <input
                     type="text"
+                    maxLength={200}
                     dir="auto"
                     placeholder={lang === "ar" ? "مثال: ابدأ معي من الصفر" : "e.g. Teach me from scratch"}
                     value={form.starter1}
@@ -3476,6 +4574,7 @@
                   <label className="block text-xs font-extrabold text-ink mb-1">{lang === "ar" ? "سؤال مقترح 2 (اختياري)" : "Starter prompt 2 (optional)"}</label>
                   <input
                     type="text"
+                    maxLength={200}
                     dir="auto"
                     placeholder={lang === "ar" ? "مثال: اختبر مستواي وصمم لي خطة" : "e.g. Assess my level and make a plan"}
                     value={form.starter2}
@@ -3485,7 +4584,7 @@
                 </div>
               </div>
 
-              <div className="nb-box p-4">
+              <div className="nb-box p-4 space-y-4">
                 <div>
                   <div className="flex items-center justify-between text-xs mb-2">
                     <span className="font-extrabold text-ink">{lang === "ar" ? "درجة الإبداع (Temperature)" : "Creativity (Temperature)"}</span>
@@ -3521,6 +4620,55 @@
                     className="w-full accent-ink cursor-pointer"
                   />
                 </div>
+
+                <div className="pt-3 border-t border-line">
+                  <span className="block text-xs font-extrabold text-ink mb-2">
+                    {lang === "ar" ? "الخصوصية وظهور الوكيل" : "Agent Visibility"}
+                  </span>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <button
+                      type="button"
+                      disabled={loading}
+                      onClick={() => updateField("isPublic", true)}
+                      className={`p-2.5 text-start border rounded-xl transition-colors ${
+                        form.isPublic
+                          ? "bg-sageMist border-brandBlue shadow-sm"
+                          : "bg-paper border-line hover:bg-cream"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-xs font-extrabold text-ink">
+                          {lang === "ar" ? "عام (Public)" : "Public"}
+                        </span>
+                        <Icon name="globe" className="w-3.5 h-3.5 text-brandBlue" />
+                      </div>
+                      <p className="text-[11px] font-semibold text-neutral-600 mt-0.5">
+                        {lang === "ar" ? "يظهر في المكتبة ويمكن مشاركته مع الجميع." : "Listed in the catalog and shareable."}
+                      </p>
+                    </button>
+
+                    <button
+                      type="button"
+                      disabled={loading}
+                      onClick={() => updateField("isPublic", false)}
+                      className={`p-2.5 text-start border rounded-xl transition-colors ${
+                        !form.isPublic
+                          ? "bg-brandYellow/60 border-brandBlue shadow-sm"
+                          : "bg-paper border-line hover:bg-cream"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-xs font-extrabold text-ink">
+                          {lang === "ar" ? "خاص (Private)" : "Private"}
+                        </span>
+                        <Icon name="lock" className="w-3.5 h-3.5 text-ink" />
+                      </div>
+                      <p className="text-[11px] font-semibold text-neutral-600 mt-0.5">
+                        {lang === "ar" ? "يظهر في حسابك فقط ولا يُنشر للعامة." : "Only visible and accessible in your account."}
+                      </p>
+                    </button>
+                  </div>
+                </div>
               </div>
 
               {/* Visible inline error directly inside the create-agent form */}
@@ -3534,12 +4682,20 @@
                 {loading ? (
                   <React.Fragment>
                     <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                    <span>{lang === "ar" ? "جاري هندسة البرومبت ونشر الوكيل..." : "Building and publishing your agent..."}</span>
+                    <span>
+                      {isEducational && pdfFile
+                        ? (lang === "ar" ? "جاري تحليل ملف PDF وهندسة الوكيل..." : "Analyzing PDF & building your agent...")
+                        : (lang === "ar" ? "جاري هندسة البرومبت وحفظ الوكيل..." : "Building and saving your agent...")}
+                    </span>
                   </React.Fragment>
                 ) : (
                   <React.Fragment>
                     <Icon name="sparkles" className="w-4 h-4" />
-                    <span>{lang === "ar" ? "هندسة ونشر الوكيل" : "Build & publish agent"}</span>
+                    <span>
+                      {form.isPublic
+                        ? (lang === "ar" ? "هندسة ونشر الوكيل" : "Build & publish agent")
+                        : (lang === "ar" ? "هندسة وحفظ الوكيل الخاص" : "Build & save private agent")}
+                    </span>
                   </React.Fragment>
                 )}
               </button>
