@@ -1433,6 +1433,7 @@
       const [profileAgents, setProfileAgents] = useState([]);
       const [profileLoading, setProfileLoading] = useState(false);
       const [profileError, setProfileError] = useState("");
+      const [togglingVisibilitySlug, setTogglingVisibilitySlug] = useState("");
       const [creatorProfile, setCreatorProfile] = useState({
         user: null,
         agents: [],
@@ -2285,6 +2286,53 @@
         notify(lang === "ar" ? "تم تحديث النبذة التعريفية بنجاح" : "Bio updated successfully", "success");
       }, [apiFetch, lang, notify]);
 
+      const handleToggleAgentVisibility = useCallback(async (agentObj) => {
+        if (!agentObj?.slug || !token || togglingVisibilitySlug) return;
+        const nextIsPublic = agentObj.isPublic === false;
+        setTogglingVisibilitySlug(agentObj.slug);
+        try {
+          const res = await apiFetch(`/api/agents/${encodeURIComponent(agentObj.slug)}/visibility`, {
+            method: "PATCH",
+            body: JSON.stringify({ isPublic: nextIsPublic }),
+          }, "agent_visibility");
+
+          const updatedAgent = res.data || { ...agentObj, isPublic: nextIsPublic };
+
+          setProfileAgents((prev) =>
+            prev.map((item) => (item.slug === agentObj.slug ? { ...item, ...updatedAgent } : item))
+          );
+
+          setActiveAgent((prev) =>
+            prev && prev.slug === agentObj.slug ? { ...prev, ...updatedAgent } : prev
+          );
+
+          setCreatorProfile((prev) => {
+            if (!prev.user) return prev;
+            const currentAgents = Array.isArray(prev.agents) ? prev.agents : [];
+            const existsInList = currentAgents.some((item) => item.slug === agentObj.slug);
+            let nextAgents = currentAgents;
+            if (!nextIsPublic) {
+              nextAgents = currentAgents.filter((item) => item.slug !== agentObj.slug);
+            } else if (existsInList) {
+              nextAgents = currentAgents.map((item) => (item.slug === agentObj.slug ? { ...item, ...updatedAgent } : item));
+            }
+            return { ...prev, agents: nextAgents };
+          });
+
+          fetchAgents(1, false);
+          notify(
+            nextIsPublic
+              ? (lang === "ar" ? "تم تحويل الوكيل إلى عام وسيظهر في المنصة" : "Agent is now public and visible in Explore")
+              : (lang === "ar" ? "تم تحويل الوكيل إلى خاص ولن يظهر للعامة" : "Agent is now private and hidden from Explore"),
+            "success"
+          );
+        } catch (err) {
+          notify(getFriendlyError(err, lang), "error");
+        } finally {
+          setTogglingVisibilitySlug("");
+        }
+      }, [token, togglingVisibilitySlug, apiFetch, fetchAgents, lang, notify]);
+
       const handleLogout = () => {
         abortActiveStream();
         if (token) {
@@ -2408,6 +2456,8 @@
               onRefresh={() => loadProfileAgents(user)}
               onUpdateBio={handleUpdateBio}
               onShareCreator={handleShareCreator}
+              onToggleVisibility={handleToggleAgentVisibility}
+              togglingVisibilitySlug={togglingVisibilitySlug}
             />
           )}
 
@@ -2462,6 +2512,9 @@
               onOpenCreator={openCreatorProfile}
               onSendMessage={handleSendMessage}
               onAbortStream={abortActiveStream}
+              isOwner={Boolean(user && isAgentOwnedBy(activeAgent, user))}
+              togglingVisibility={togglingVisibilitySlug === activeAgent.slug}
+              onToggleVisibility={handleToggleAgentVisibility}
             />
           )}
 
@@ -3170,7 +3223,25 @@
       onOpenCreator,
       onSendMessage,
       onAbortStream,
+      isOwner = false,
+      togglingVisibility = false,
+      onToggleVisibility,
     }) {
+      const isPrivate = activeAgent.isPublic === false;
+      const renderVisibilityBadge = (compact = false) => {
+        if (!isPrivate && !isOwner) return null;
+        return (
+          <span
+            className={`inline-flex items-center gap-1 ${compact ? "px-1.5" : "px-2"} py-0.5 border border-line text-[10px] font-extrabold text-ink flex-shrink-0 ${
+              isPrivate ? "bg-cream" : "bg-sageMist"
+            }`}
+          >
+            <Icon name={isPrivate ? "lock" : "globe"} className={compact ? "w-2.5 h-2.5" : "w-3 h-3"} />
+            {isPrivate ? (lang === "ar" ? "خاص" : "Private") : (lang === "ar" ? "عام" : "Public")}
+          </span>
+        );
+      };
+
       return (
         <div className="flex-1 flex min-h-0 overflow-hidden bg-cream">
           {showMobileHistory && (
@@ -3232,11 +3303,7 @@
                     <span className="px-2 py-0.5 bg-brandYellow border border-line text-[10px] font-extrabold text-ink">
                       {activeAgent.category}
                     </span>
-                    {activeAgent.isPublic === false && (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-cream border border-line text-[10px] font-extrabold text-ink">
-                        <Icon name="lock" className="w-2.5 h-2.5" /> {lang === "ar" ? "خاص" : "Private"}
-                      </span>
-                    )}
+                    {renderVisibilityBadge(true)}
                     {activeAgent.creator?.username && (
                       <button
                         type="button"
@@ -3350,11 +3417,7 @@
                   <span className="px-2 py-0.5 bg-brandYellow border border-line text-[10px] font-extrabold text-ink">
                     {activeAgent.category}
                   </span>
-                  {activeAgent.isPublic === false && (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-cream border border-line text-[10px] font-extrabold text-ink">
-                      <Icon name="lock" className="w-3 h-3" /> {lang === "ar" ? "خاص" : "Private"}
-                    </span>
-                  )}
+                  {renderVisibilityBadge(false)}
                   {activeAgent.creator?.username && (
                     <button
                       type="button"
@@ -3384,7 +3447,29 @@
               </div>
 
               <div className="flex items-center gap-2 flex-shrink-0">
-                {activeAgent.isPublic !== false && (
+                {isOwner && onToggleVisibility && (
+                  <button
+                    type="button"
+                    onClick={() => onToggleVisibility(activeAgent)}
+                    disabled={togglingVisibility}
+                    title={isPrivate
+                      ? (lang === "ar" ? "تحويل الوكيل إلى عام" : "Make agent Public")
+                      : (lang === "ar" ? "تحويل الوكيل إلى خاص" : "Make agent Private")}
+                    className={`nb-btn px-3 py-1.5 text-ink text-xs font-extrabold inline-flex items-center gap-1.5 disabled:opacity-60 ${
+                      isPrivate ? "bg-sageMist hover:bg-brandYellow" : "bg-cream hover:bg-brandYellow"
+                    }`}
+                  >
+                    <Icon name={isPrivate ? "globe" : "lock"} className="w-3.5 h-3.5" />
+                    <span>
+                      {togglingVisibility
+                        ? (lang === "ar" ? "جاري التبديل..." : "Switching...")
+                        : isPrivate
+                          ? (lang === "ar" ? "نشر للعامة" : "Make Public")
+                          : (lang === "ar" ? "جعل خاص" : "Make Private")}
+                    </span>
+                  </button>
+                )}
+                {!isPrivate && (
                   <button
                     type="button"
                     onClick={() => onShareAgent(activeAgent)}
@@ -3420,14 +3505,28 @@
                 <span className="font-extrabold text-sm text-ink truncate" dir="auto">
                   {activeAgent.name}
                 </span>
-                {activeAgent.isPublic === false && (
-                  <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-cream border border-line text-[10px] font-extrabold text-ink flex-shrink-0">
-                    <Icon name="lock" className="w-2.5 h-2.5" /> {lang === "ar" ? "خاص" : "Private"}
-                  </span>
-                )}
+                {renderVisibilityBadge(true)}
               </div>
               <div className="flex items-center gap-1.5 flex-shrink-0">
-                {activeAgent.isPublic !== false && (
+                {isOwner && onToggleVisibility && (
+                  <button
+                    type="button"
+                    onClick={() => onToggleVisibility(activeAgent)}
+                    disabled={togglingVisibility}
+                    title={isPrivate
+                      ? (lang === "ar" ? "تحويل الوكيل إلى عام" : "Make agent Public")
+                      : (lang === "ar" ? "تحويل الوكيل إلى خاص" : "Make agent Private")}
+                    aria-label={isPrivate
+                      ? (lang === "ar" ? "تحويل الوكيل إلى عام" : "Make agent Public")
+                      : (lang === "ar" ? "تحويل الوكيل إلى خاص" : "Make agent Private")}
+                    className={`nb-btn w-8 h-8 flex items-center justify-center text-ink disabled:opacity-60 ${
+                      isPrivate ? "bg-sageMist" : "bg-cream"
+                    }`}
+                  >
+                    <Icon name={isPrivate ? "globe" : "lock"} className="w-4 h-4" />
+                  </button>
+                )}
+                {!isPrivate && (
                   <button
                     type="button"
                     onClick={() => onShareAgent(activeAgent)}
@@ -3639,7 +3738,7 @@
       );
     }
 
-    function ProfilePage({ user, lang, agents, loading, error, isOwnProfile = true, onExplore, onCreate, onOpenAgent, onRefresh, onUpdateBio, onShareCreator }) {
+    function ProfilePage({ user, lang, agents, loading, error, isOwnProfile = true, onExplore, onCreate, onOpenAgent, onRefresh, onUpdateBio, onShareCreator, onToggleVisibility, togglingVisibilitySlug = "" }) {
       const [filter, setFilter] = useState("");
       const [editingBio, setEditingBio] = useState(false);
       const [bioDraft, setBioDraft] = useState(user.bio || "");
@@ -3879,47 +3978,88 @@
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-              {visibleAgents.map((agent) => (
-                <button
-                  key={agent._id || agent.slug}
-                  type="button"
-                  onClick={() => onOpenAgent(agent.slug)}
-                  className="nb-card text-start p-5 flex flex-col justify-between"
-                >
-                  <div>
-                    <div className="flex items-center gap-3 mb-3">
-                      <SafeAvatar
-                        src={agent.avatarUrl}
-                        alt={agent.name}
-                        fallbackText={agent.name}
-                        className="w-12 h-12 border-2 border-line bg-cream object-cover text-base"
-                      />
-                      <div className="min-w-0 flex-1">
-                        <h3 className="font-extrabold text-base text-ink truncate" dir="auto">{agent.name}</h3>
-                        <div className="flex flex-wrap items-center gap-1.5 mt-1">
-                          <span className="px-2 py-0.5 bg-brandYellow border border-line text-[10px] font-extrabold">{agent.category}</span>
-                          {isOwnProfile && (
-                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 border border-line text-[10px] font-extrabold ${
-                              agent.isPublic === false ? "bg-cream text-ink" : "bg-sageMist text-ink"
-                            }`}>
-                              {agent.isPublic === false && <Icon name="lock" className="w-2.5 h-2.5" />}
-                              {agent.isPublic === false ? (lang === "ar" ? "خاص" : "Private") : (lang === "ar" ? "عام" : "Public")}
-                            </span>
-                          )}
+              {visibleAgents.map((agent) => {
+                const isPrivate = agent.isPublic === false;
+                const isToggling = togglingVisibilitySlug === agent.slug;
+                return (
+                  <div
+                    key={agent._id || agent.slug}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => onOpenAgent(agent.slug)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        onOpenAgent(agent.slug);
+                      }
+                    }}
+                    className="nb-card text-start p-5 flex flex-col justify-between cursor-pointer"
+                  >
+                    <div>
+                      <div className="flex items-center gap-3 mb-3">
+                        <SafeAvatar
+                          src={agent.avatarUrl}
+                          alt={agent.name}
+                          fallbackText={agent.name}
+                          className="w-12 h-12 border-2 border-line bg-cream object-cover text-base"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <h3 className="font-extrabold text-base text-ink truncate" dir="auto">{agent.name}</h3>
+                          <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                            <span className="px-2 py-0.5 bg-brandYellow border border-line text-[10px] font-extrabold">{agent.category}</span>
+                            {isOwnProfile && (
+                              <span className={`inline-flex items-center gap-1 px-2 py-0.5 border border-line text-[10px] font-extrabold ${
+                                isPrivate ? "bg-cream text-ink" : "bg-sageMist text-ink"
+                              }`}>
+                                <Icon name={isPrivate ? "lock" : "globe"} className="w-2.5 h-2.5" />
+                                {isPrivate ? (lang === "ar" ? "خاص" : "Private") : (lang === "ar" ? "عام" : "Public")}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
+                      <p className="text-xs font-semibold text-neutral-700 line-clamp-2 mb-4" dir="auto">{agent.description}</p>
                     </div>
-                    <p className="text-xs font-semibold text-neutral-700 line-clamp-2 mb-4" dir="auto">{agent.description}</p>
+                    <div className="pt-3 border-t-2 border-line w-full flex flex-wrap items-center justify-between gap-2 text-xs font-extrabold">
+                      <span className="inline-flex items-center gap-1">
+                        <Icon name="eye" className="w-3.5 h-3.5" />
+                        {agent.viewsCount || 0} {lang === "ar" ? "مشاهدة" : "views"}
+                      </span>
+                      <div className="flex items-center gap-2">
+                        {isOwnProfile && onToggleVisibility && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onToggleVisibility(agent);
+                            }}
+                            onKeyDown={(e) => e.stopPropagation()}
+                            disabled={isToggling}
+                            title={isPrivate
+                              ? (lang === "ar" ? "تحويل الوكيل إلى عام" : "Make agent Public")
+                              : (lang === "ar" ? "تحويل الوكيل إلى خاص" : "Make agent Private")}
+                            className={`px-2.5 py-1 border border-line text-[11px] font-extrabold inline-flex items-center gap-1 transition-colors disabled:opacity-60 ${
+                              isPrivate
+                                ? "bg-brandBlue text-white hover:opacity-90"
+                                : "bg-cream text-ink hover:bg-brandYellow"
+                            }`}
+                          >
+                            <Icon name={isPrivate ? "globe" : "lock"} className="w-3 h-3" />
+                            <span>
+                              {isToggling
+                                ? (lang === "ar" ? "جاري التحديث..." : "Updating...")
+                                : isPrivate
+                                  ? (lang === "ar" ? "نشر للعامة" : "Make Public")
+                                  : (lang === "ar" ? "جعل خاص" : "Make Private")}
+                            </span>
+                          </button>
+                        )}
+                        <span className="text-brandBlue">{lang === "ar" ? "فتح مساحة العمل" : "Open workspace"}</span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="pt-3 border-t-2 border-line w-full flex items-center justify-between text-xs font-extrabold">
-                    <span className="inline-flex items-center gap-1">
-                      <Icon name="eye" className="w-3.5 h-3.5" />
-                      {agent.viewsCount || 0} {lang === "ar" ? "مشاهدة" : "views"}
-                    </span>
-                    <span className="text-brandBlue">{lang === "ar" ? "فتح مساحة العمل" : "Open workspace"}</span>
-                  </div>
-                </button>
-              ))}
+                );
+              })}
             </div>
           )}
         </main>
